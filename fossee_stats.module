@@ -10,11 +10,7 @@
 				"title" => t("Manage fossee_stats"),
 				"description" => t("Allows users to manage job postings.")
 				),
-           /* "manage download_application" => array(
-                "title" => t("Manage Download Portal"),
-                "description" => t("Allows users to download job applications.")
-            ),*/
-);
+			);
 		}
 
 		function fossee_stats_menu() {
@@ -60,11 +56,7 @@
           // dropdown when rebuilt.
           '#ajax' => array(
             
-            // When 'event' occurs, Drupal will perform an ajax request in the
-            // background. Usually the default value is sufficient (eg. change for
-            // select elements), but valid values include any jQuery event,
-            // most notably 'mousedown', 'blur', and 'submit'.
-            // 'event' => 'change',
+            /* When 'event' occurs, Drupal will perform an ajax request in the background. Usually the default value is sufficient (eg. change for select elements), but valid values include any jQuery event, most notably 'mousedown', 'blur', and 'submit'. 'event' => 'change',*/
             'callback' =>'ajax_example_dependent_dropdown_callback',
             'wrapper' => 'dropdown-second-replace',
           ),
@@ -127,7 +119,7 @@
         $form['foss_select_branch'] = array(
           '#type' => 'select',
           '#title' => t('Branch'),
-          '#options' => _ajax_get_branch_options($foss_project),
+          '#options' => _ajax_get_branch_options($foss_project,$foss_sub_project),
           // The entire enclosing div created here gets replaced when foss_type
           // is changed.
           '#prefix' => '<div id="dropdown-fourth-replace">',
@@ -202,11 +194,11 @@
 		         $options[1] = "Textbook Companion";
 		         $options[2] = "Lab Migration";
 		      }else if(($subproject_detail->tbc)!=0&&($subproject_detail->lab_migration)==0){
-		         $options[0] = "--------------";
+		         	$options[0] = "--------------";
 			      $options[1] = "Textbook Companion";
 		      }else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)!=0){
-		         $options[0] = "--------------";
-			      $options[1] = "Lab Migration";
+		         $options[1] = "--------------";
+			      $options[2] = "Lab Migration";
 		      }else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)==0) {
 				      $options[0] = "No Sub-Project Available";
 		      }else {
@@ -245,41 +237,54 @@
    }
 
 
-function _ajax_get_branch_options($foss_project = ''){
+function _ajax_get_branch_options($foss_project = '',$foss_sub_project=''){
         
 if($foss_project!=0){
-$other_database = array(
-      'database' => 'scilab_nolinks',
-      'username' => 'root', // assuming this is necessary
-      'password' => 'root', // assuming this is necessary
-      'host' => 'localhost', // assumes localhost
-      'driver' => 'mysql', // replace with your database driver
-  );
-  // replace 'YourDatabaseKey' with something that's unique to your module
-  Database::addConnectionInfo('YourDatabaseKey', 'default', $other_database);
-  db_set_active('YourDatabaseKey');
-
- $options = array();
+//$other_database = array(
+ //     'database' => 'scilab_nolinks',
+ //     'username' => 'root', // assuming this is necessary
+ //     'password' => 'root', // assuming this is necessary
+  //    'host' => 'localhost', // assumes localhost
+  //    'driver' => 'mysql', // replace with your database driver
+  //);
+  ////// replace 'YourDatabaseKey' with something that's unique to your module
+  //Database::addConnectionInfo('YourDatabaseKey', 'default', $other_database);
+ // db_set_active('YourDatabaseKey');
+ 			db_set_active('scilab_db');
+ 		        $options = array();
 		
-		      $query = db_select('textbook_companion_proposal');
-			$query->fields('textbook_companion_proposal', array('branch'));
+if($foss_sub_project==1){
+		         $query = db_select('textbook_companion_proposal');
+			 $query->fields('textbook_companion_proposal', array('branch'));
 			 $query->distinct();
-
-		      $result = $query->execute();
+			 $result = $query->execute();
 		     $options['0'] = "--------------";
 			$x = 1;
                  while ($foss_branch = $result->fetchObject())
                    {
                    $options[$x++] = $foss_branch->branch;
                    }
-           	     
+
+}else{
+
+$query = db_select('lab_migration_proposal');
+			 $query->fields('lab_migration_proposal', array('department'));
+			 $query->distinct();
+			 $result = $query->execute();
+		     $options['0'] = "--------------";
+			$x = 1;
+                 while ($foss_branch = $result->fetchObject())
+                   {
+                   $options[$x++] = $foss_branch->department;
+                   }
+}   
               
 		db_set_active('default'); // We need to call the main (drupal) db back
 		      
 		      
             return $options;
-  db_set_active(); // without the paramater means set back to the default for the site
-  drupal_set_message(t('The queries have been made.'));
+  	db_set_active(); // without the paramater means set back to the default for the site
+  	drupal_set_message(t('The queries have been made.'));
 
  }else{
 
@@ -290,7 +295,7 @@ $options[0] ='-----------';
 
 
 
-		function ajax_example_dependent_dropdown_callback($form, $form_state) {
+		function ajax_example_dependent_dropdown_callback($form, $form_state){
 		  //$form['foss_sub_project']['#value'] = '';
 		  //$form['foss_sub_project_status']['#value'] = '';
 			$form['foss_sub_project_status']['#options']=_ajax_example_get_third_dropdown_options($foss_sub_project);
@@ -304,7 +309,9 @@ $options[0] ='-----------';
 		}
 
 		function ajax_example_dependent_dropdown_callback1($form, $form_state){
-		  return $form['foss_sub_project_status'];
+  		  $commands[] = ajax_command_replace("#dropdown-third-replace", drupal_render($form['foss_sub_project_status']));
+		  $commands[] = ajax_command_replace("#dropdown-fourth-replace", drupal_render($form['foss_select_branch']));
+		  return array('#type' => 'ajax', '#commands' => $commands);
 		}
             
     
