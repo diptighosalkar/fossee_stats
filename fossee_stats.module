@@ -22,6 +22,12 @@
 			"access arguments" => array("access fossee_stats"),
 			"type" => MENU_NORMAL_ITEM,
 		);
+		$items["fossee-stats-all"] = array(
+			"title" => "FOSSEE STATS",
+			"page callback" => "fossee_stats_all",			
+			"access arguments" => array("access fossee_stats"),
+			"type" => MENU_NORMAL_ITEM,
+		);
 		
 		$items["jobs/ajax"] = array(
 			"title" => "Ajax callbacks",
@@ -31,6 +37,19 @@
 		);
 		
 		return $items;
+		}
+		
+		function fossee_stats_all(){
+		$page = "";
+		
+		$fossee_stats = drupal_get_form('fossee_stats_form');
+		$page .= drupal_render($fossee_stats);
+		
+		$page .= "<div id ='fossee-stats-all'>";
+		
+		
+		$page .= "</div>";
+		return $page;
 		}
 		
 		function fossee_stats_form($form, &$form_state) {
@@ -155,16 +174,54 @@
         
         $form['submit'] = array(
           '#type' => 'submit',
-          '#value' => t('Filter'),
+			 '#ajax' => array(
+				'callback' => 'ajax_example_submit_driven_callback',
+				'wrapper' => 'box',
+			 ),
+			 '#value' => t('Filter'),
         );
          $form['reset'] = array(
           '#type' => 'submit',
           '#value' => t('Reset'),
         );
+			$form['box'] = array(
+				 '#type' => 'markup',
+				 '#prefix' => '<div id="box">',
+				 '#suffix' => '</div>',
+				 '#markup' => '<h1>Initial markup for box</h1>',
+			  );        
         
         return $form;
         }
     
+    function ajax_example_submit_driven_callback($form, $form_state) {
+			  // In most cases, it is recomended that you put this logic in form generation
+			  // rather than the callback. Submit driven forms are an exception, because
+			  $headers = array(
+                "#", "Foss Name", "TBC", "Lab Migration",
+            );
+			  $query = db_select('foss_type');
+	         $query->fields('foss_type');	        
+	         $result = $query->execute()->fetchAll();
+		$rows = array();
+            $i=1;
+            foreach($result as $row) {
+                $item = array(
+                    $i,
+                    $row->foss_name,
+                    $row->tbc,
+                    $row->lab_migration,
+                    
+                );
+                array_push($rows, $item);
+                $i++;
+            }
+		
+			  // you may not want to return the form at all.
+			  $element = $form['box'];
+			  $element['#markup'] = bootstrap_table_format($headers, $rows);
+			  return $element;
+		}
 		function _ajax_example_get_first_dropdown_options(){
            	$query = db_select('foss_type');
 	         $query->fields('foss_type', array('id'));
@@ -314,7 +371,27 @@ $options[0] ='-----------';
 		  return array('#type' => 'ajax', '#commands' => $commands);
 		}
             
-    
+    function bootstrap_table_format($headers, $rows) {
+        $thead = "";
+        $tbody = "";
+        foreach($headers as $header) {
+            $thead .= "<th>{$header}</th>";
+        }
+        foreach($rows as $row) {
+            $tbody .= "<tr>";
+            foreach($row as $data) {
+                $tbody .= "<td>{$data}</td>";
+            }
+            $tbody .= "</tr>";
+        }
+        $table = "
+            <table class='table table-bordered table-hover' style='margin-left:-140px'>
+                <thead>{$thead}</thead>
+                <tbody>{$tbody}</tbody>
+            </table>
+        ";
+        return $table;
+    }
      
      
           
