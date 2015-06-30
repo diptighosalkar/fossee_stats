@@ -1,0 +1,241 @@
+<?php 
+
+		function fossee_stats_permission() {
+			return array(
+				"access fossee_stats" => array(
+				"title" => t("Access fossee_stats"),
+				"description" => t("Allows users to view job postings.")
+				),
+				"manage fossee_stats" => array(
+				"title" => t("Manage fossee_stats"),
+				"description" => t("Allows users to manage job postings.")
+				),
+           /* "manage download_application" => array(
+                "title" => t("Manage Download Portal"),
+                "description" => t("Allows users to download job applications.")
+            ),*/
+);
+		}
+
+		function fossee_stats_menu() {
+		$items = array();
+		$items["fossee-stats"] = array(
+			"title" => "FOSSEE STATS",
+			"page callback" => "drupal_get_form",
+			"page arguments" => array("fossee_stats_form"),
+			"access arguments" => array("access fossee_stats"),
+			"type" => MENU_NORMAL_ITEM,
+		);
+		
+		$items["jobs/ajax"] = array(
+			"title" => "Ajax callbacks",
+			"page callback" => "fossee_stats_ajax",
+			"access arguments" => array("access fossee_stats"),
+			"type" => MENU_CALLBACK
+		);
+		
+		return $items;
+		}
+		
+		function fossee_stats_form($form, &$form_state) {
+			$options_first = _ajax_example_get_first_dropdown_options();
+
+		// If we have a value for the first dropdown from $form_state['values'] we use
+		// this both as the default value for the first dropdown and also as a
+		// parameter to pass to the function that retrieves the options for the
+		// second dropdown.
+			if(isset($form_state['values']['foss_type'])){
+			$foss_project = isset($form_state['values']['foss_type']) ? $form_state['values']['foss_type'] : key($options_first);
+			}else{
+		$foss_project = '';
+		}
+		//$foss_project=$selected;
+		$form['foss_type'] = array(
+		'#type' => 'select',
+		'#title' => 'FOSS Type',
+		'#options' => $options_first,
+		'#default_value' => $foss_project,
+          // Bind an ajax callback to the change event (which is the default for the
+          // select form type) of the first dropdown. It will replace the second
+          // dropdown when rebuilt.
+          '#ajax' => array(
+            
+            // When 'event' occurs, Drupal will perform an ajax request in the
+            // background. Usually the default value is sufficient (eg. change for
+            // select elements), but valid values include any jQuery event,
+            // most notably 'mousedown', 'blur', and 'submit'.
+            // 'event' => 'change',
+            'callback' =>'ajax_example_dependent_dropdown_callback',
+            'wrapper' => 'dropdown-second-replace',
+          ),
+        );
+         if(isset($form_state['values']['foss_sub_project'])){
+            $foss_sub_project = isset($form_state['values']['foss_sub_project']) ? $form_state['values']['foss_sub_project'] : key(_ajax_example_get_second_dropdown_options($foss_project));
+         }else{
+            $foss_sub_project = '';
+          }
+      $form['foss_sub_project'] = array(
+          '#type' => 'select',
+          '#title' => t('Foss Sub Project'),
+          '#options' => _ajax_example_get_second_dropdown_options($foss_project),
+          // The entire enclosing div created here gets replaced when foss_type
+          // is changed.
+          '#prefix' => '<div id="dropdown-second-replace">',
+          '#suffix' => '</div>',
+          // When the form is rebuilt during ajax processing, the $selected variable
+          // will now have the new value and so the options will change.
+         // '#options' => _ajax_example_get_second_dropdown_options($selected),
+          '#default_value' => $foss_sub_project,
+          '#ajax' => array(
+            
+            // When 'event' occurs, Drupal will perform an ajax request in the
+            // background. Usually the default value is sufficient (eg. change for
+            // select elements), but valid values include any jQuery event,
+            // most notably 'mousedown', 'blur', and 'submit'.
+            // 'event' => 'change',
+            'callback' =>'ajax_example_dependent_dropdown_callback1',
+            'wrapper' => 'dropdown-third-replace',
+          ),
+        );
+         if(isset($form_state['values']['foss_sub_project']) && isset($form_state['values']['foss_type'])){
+         $foss_sub_project_status = isset($form_state['values']['foss_sub_project']) ? $form_state['values']['foss_sub_project'] : '';
+        }else{
+        $foss_sub_project_status = '';
+        }
+        
+        $form['foss_sub_project_status'] = array(
+          '#type' => 'select',
+          '#title' => t('Status'),
+          '#options' => _ajax_example_get_third_dropdown_options($foss_sub_project),
+          // The entire enclosing div created here gets replaced when foss_type
+          // is changed.
+          '#prefix' => '<div id="dropdown-third-replace">',
+          '#suffix' => '</div>',
+          
+          // When the form is rebuilt during ajax processing, the $selected variable
+          // will now have the new value and so the options will change.
+         // '#options' => _ajax_example_get_second_dropdown_options($selected),
+          '#default_value' => $foss_sub_project_status,
+        );
+         
+       $today = date("Y-m-d H:i:s");
+       $form['start_date'] = array(
+        '#type' => 'date_popup',
+        
+        '#default_value' => $today,
+        '#date_type' => DATE_DATETIME,
+        '#date_format' => 'd/m/Y',
+        '#date_increment' => 1,
+        '#date_year_range' => '-3:+3',
+      );
+      $today = date("Y-m-d H:i:s");
+      $form['end_date'] = array(
+        '#type' => 'date_popup',
+        '#default_value' => $today,
+        '#date_type' => DATE_DATETIME,
+        '#date_format' => 'd/m/Y',
+        '#date_increment' => 1,
+        '#date_year_range' => '-3:+3',
+      );
+        
+        $form['submit'] = array(
+          '#type' => 'submit',
+          '#value' => t('Filter'),
+        );
+         $form['reset'] = array(
+          '#type' => 'submit',
+          '#value' => t('Reset'),
+        );
+        
+        return $form;
+        }
+    
+		function _ajax_example_get_first_dropdown_options(){
+           	$query = db_select('foss_type');
+	         $query->fields('foss_type', array('id'));
+	         $query->fields('foss_type', array('foss_name'));
+	         $result = $query->execute();
+           	$options = array();
+           	    $options[''] = "--------------";
+                 while ($foss_detail = $result->fetchObject())
+                   {
+                   $options[$foss_detail->id] = $foss_detail->foss_name;
+                   }
+            return $options;
+      }
+            
+		function _ajax_example_get_second_dropdown_options($foss_project = ''){
+         if($foss_project != NULL){
+		      $query = db_select('foss_type');
+		      $query->fields('foss_type', array('tbc'));
+		      $query->fields('foss_type', array('lab_migration'));
+		      $query->condition('id',$foss_project);
+		      $result = $query->execute();
+		      $subproject_detail = $result->fetchObject();
+           		$options = array();
+              
+		      if(($subproject_detail->tbc)!=0&&($subproject_detail->lab_migration)!=0){
+		         $options[''] = "--------------";
+		         $options[0] = "Textbook Companion";
+		         $options[1] = "Lab Migration";
+		      }else if(($subproject_detail->tbc)!=0&&($subproject_detail->lab_migration)==0){
+		         $options[''] = "--------------";
+			      $options[0] = "Textbook Companion";
+		      }else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)!=0){
+		         $options[''] = "--------------";
+			      $options[0] = "Lab Migration";
+		      }else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)==0) {
+				      $options[0] = "No Sub-Project Available";
+		      }else {
+		      $options[''] = "--------------";
+		      }   
+            return $options;
+         }else{
+              $options[''] = "--------------";
+                return $options;
+         }
+    }
+           
+	function _ajax_example_get_third_dropdown_options($foss_sub_project=''){
+     	     $options = array();
+     	   
+     	    if($foss_sub_project!=''){
+		        
+           if($foss_sub_project==0){
+              $options[''] = "----------2";
+              $options[0] = "Books In Progress";
+              $options[1] = "Completed Books";
+ 	    
+		}else if($foss_sub_project==1){
+		$options[''] = "----------";
+		$options[0] = "Labs in Progress";
+      $options[1] = "Completed Labs"; 	
+		}else {
+		$options[0] = "Not Available";
+		}
+		}else{
+		$options[''] = "----------1";
+		}
+
+            return $options;
+   }
+
+		function ajax_example_dependent_dropdown_callback($form, $form_state) {
+		  $form['foss_sub_project']['#value'] = '';
+		  $form['foss_sub_project_status']['#value'] = '';
+		  // $commands = array();
+		  $commands[] = ajax_command_replace("#dropdown-second-replace", drupal_render($form['foss_sub_project']));
+		  $commands[] = ajax_command_replace("#dropdown-third-replace", drupal_render($form['foss_sub_project_status']));
+		  return array('#type' => 'ajax', '#commands' => $commands);
+		 //return $form['foss_sub_project'];
+		}
+
+		function ajax_example_dependent_dropdown_callback1($form, $form_state){
+		  return $form['foss_sub_project_status'];
+		}
+            
+    
+     
+     
+          
+     

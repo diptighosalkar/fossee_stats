@@ -1,0 +1,7 @@
+name = Fossee stats
+description = Fossee stats for FOSSEE .
+package = STATISTICS
+core = 7.x
+
+stylesheets[all][] = css/base.css
+stylesheets[all][] = css/main.css
