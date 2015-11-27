@@ -230,7 +230,8 @@ function fossee_stats_form($form, &$form_state)
                     array(
                         ':input[name="foss_type"]' => array(
                             'value' => ""
-                        )
+                        ),
+			
                     )
                 )
             )
@@ -294,8 +295,22 @@ function fossee_stats_form($form, &$form_state)
         '#options' => get_country_list($foss_project,$foss_sub_project),
         '#states' => array(
             'invisible' => array(
-                ':input[name="foss_sub_project"]' => array(
-                    'value' => 0
+                array(
+                    array(
+                        ':input[name="foss_sub_project"]' => array(
+                            'value' => 0
+                        )
+                    ),
+                    'or',
+                    array(
+                        ':input[name="foss_type"]' => array(
+                            'value' => ""
+                        ),
+			':input[name="foss_type"]' => array(
+                            'value' => 3
+                        )
+			
+                    )
                 )
             )
         ),
@@ -323,8 +338,22 @@ function fossee_stats_form($form, &$form_state)
         '#suffix' => '</div></td>',
         '#states' => array(
             'invisible' => array(
-                ':input[name="foss_sub_project"]' => array(
-                    'value' => 0
+                array(
+                    array(
+                        ':input[name="foss_sub_project"]' => array(
+                            'value' => 0
+                        )
+                    ),
+                    'or',
+                    array(
+                        ':input[name="foss_type"]' => array(
+                            'value' => ""
+                        ),
+			':input[name="foss_type"]' => array(
+                            'value' => 3
+                        )
+			
+                    )
                 )
             )
         ),
@@ -351,8 +380,22 @@ function fossee_stats_form($form, &$form_state)
         '#suffix' => '</div></td></tr>',
         '#states' => array(
             'invisible' => array(
-                ':input[name="foss_sub_project"]' => array(
-                    'value' => 0
+                array(
+                    array(
+                        ':input[name="foss_sub_project"]' => array(
+                            'value' => 0
+                        )
+                    ),
+                    'or',
+                    array(
+                        ':input[name="foss_type"]' => array(
+                            'value' => ""
+                        ),
+			':input[name="foss_type"]' => array(
+                            'value' => 3
+                        )
+			
+                    )
                 )
             )
         )
@@ -491,8 +534,10 @@ function getchart($sub_type)
 }
 
 
-function getchartforselectedProject($foss_type, $sub_type, $startdate, $enddate, $extrafilter)
+function getchartforselectedProject($foss_type, $sub_type, $startdate, $enddate, $countryname,$statename, $cityname)
 {
+//var_dump($foss_type."...".$sub_type."...". $startdate."...".$enddate."...".$countryname."...".$statename."...".$cityname);
+//die;
     $title = "";
     if ($sub_type == "TBC") {
         $title = $foss_type . "" . "'s Textbook Companion Statictics";
@@ -512,7 +557,7 @@ function getchartforselectedProject($foss_type, $sub_type, $startdate, $enddate,
     $chart['pie_data'] = array(
         '#type' => 'chart_data',
         '#title' => t($title),
-        '#data' => get_data_for_chart_selectedproject($foss_type, $sub_type, $startdate, $enddate, $extrafilter)
+        '#data' => get_data_for_chart_selectedproject($foss_type,$sub_type, $startdate, $enddate,$countryname,$statename, $cityname)
     );
     $example['chart'] = $chart;
     return $example;
@@ -606,8 +651,10 @@ function get_data_for_chart_allproject($sub_type)
 }
 
 
-function get_data_for_chart_selectedproject($foss_type, $sub_type, $startdate, $enddate, $extrafilter)
+function get_data_for_chart_selectedproject($foss_type, $sub_type, $startdate, $enddate, $countryname,$statename,$cityname)
 {
+//var_dump($foss_type."...".$sub_type."...". $startdate."...".$enddate."...".$countryname."...".$statename."...".$cityname);
+//die;
     if ($enddate == "") {
         $enddate = date("Y-m-d");
     }
@@ -635,35 +682,35 @@ function get_data_for_chart_selectedproject($foss_type, $sub_type, $startdate, $
                 if ($foss_detail->foss_name != 'eSim' && $foss_detail->foss_name != 'OpenFOAM' && $foss_detail->foss_name != 'OR-Tools') {
                     if ($foss_detail->foss_name != 'DWSIM') {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                         $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     } else {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                         $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     }
                 } else {
                     $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                        ':value' => "%" . db_like($extrafilter) . "%",
+                        ':value' => $cityname,
                         ':startdate' => $startdate,
                         ':enddate' => $enddate
                     ));
                     $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                        ':value' => "%" . db_like($extrafilter) . "%",
+                        ':value' =>$cityname,
                         ':startdate' => $startdate,
                         ':enddate' => $enddate
                     ));
@@ -731,12 +778,12 @@ function get_data_for_chart_selectedproject($foss_type, $sub_type, $startdate, $
             db_set_active($foss_detail->foss_name); //Active other database
             //For LM
             $query3 = db_query("SELECT COUNT(*) AS count from lab_migration_proposal WHERE approval_status=3 AND city LIKE :value AND 			FROM_UNIXTIME(approval_date) >=:startdate AND FROM_UNIXTIME(approval_date) <=:enddate", array(
-                ':value' => "%" . db_like($extrafilter) . "%",
+                ':value' => $cityname,
                 ':startdate' => $startdate,
                 ':enddate' => $enddate
             ));
             $query4 = db_query("SELECT COUNT(*) AS count from lab_migration_proposal WHERE approval_status=1 AND city LIKE :value AND 			FROM_UNIXTIME(approval_date) >=:startdate AND FROM_UNIXTIME(approval_date) <=:enddate", array(
-                ':value' => "%" . db_like($extrafilter) . "%",
+                ':value' =>$cityname,
                 ':startdate' => $startdate,
                 ':enddate' => $enddate
             ));
@@ -1220,27 +1267,38 @@ function ajax_example_submit_driven_callback($form, &$form_state)
     $startdate = trim($startdate);
     $enddate = $form_state['values']['end_date'];
     $enddate = trim($enddate);
-    $countryname = $form_state['values']['countryname'];
+    $countryname = $form['countryname']['#options'][$form_state['values']['countryname']];
     $countryname = trim($countryname);
-    $cityname = $form_state['values']['cityname'];
+    $cityname = $form['cityname']['#options'][$form_state['values']['cityname']];
     $cityname = trim($cityname);
-    $statename = $form_state['values']['statename'];
+    $statename = $form['statename']['#options'][$form_state['values']['statename']];
     $statename = trim($statename);
     
     
     $link_flag = 0;
-    if ($foss_sub_project == "Lab Migration" || $foss_sub_project == "Textbook Companion") {
+    /*if ($foss_sub_project == "Lab Migration" || $foss_sub_project == "Textbook Companion") {
         if ($cityname != "" || $startdate != "" || $enddate != "" || $statename != "") {
             $link_flag = 1;
         } else {
             $link_flag = 0;
         }
-        if ($cityname == "") {
-            $cityname = "";
+        
+    }*/
+     if ($cityname == "--------------"||$cityname =="") {
+            $cityname = "%";
         } else {
             $cityname = $cityname;
         }
-    }
+     if ($statename == "--------------"||$statename =="") {
+            $statename = "%";
+        } else {
+            $statename = $statename;
+        }
+     if ($countryname == "--------------"||$countryname =="") {
+            $countryname = "%";
+        } else {
+            $countryname = $countryname;
+        }
     if ($startdate == "") {
         $startdate = '1960/01/01';
     } else {
@@ -1332,14 +1390,14 @@ function ajax_example_submit_driven_callback($form, &$form_state)
        					<input type='radio' id='tab-1' name='tab-group-1' checked>
        					<label for='tab-1'>Textbook Companion</label>
       				 	<div class='tabcontent'><div id='tbctabledata' 	
-					style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', 'all', $startdate, $enddate, $cityname, $link_flag) . "</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "TBC", $startdate, $enddate, $cityname)) . "</div></div></div>";
+					style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', 'all', $startdate, $enddate,$countryname,$statename, $cityname, $link_flag) . "</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "TBC", $startdate, $enddate, $countryname,$statename,$cityname)) . "</div></div></div>";
                 } else if ($value == "lab_migration") {
                     $pagecontent .= "<div class='tab-preview'>
 						<input type='radio' id='tab-2' name='tab-group-1'>
 		       				<label for='tab-2'>Lab Migration</label>
       				 		<div class='tabcontent'>
-						<div id='lmtabledata' style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "all", $startdate, $enddate, $cityname, $link_flag) . "</div>
-						<div id='lmchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "LM", $startdate, $enddate, $cityname)) . "<div></div></div></div></div>";
+						<div id='lmtabledata' style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "all", $startdate, $enddate, $countryname,$statename, $cityname, $link_flag) . "</div>
+						<div id='lmchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "LM", $startdate, $enddate,$countryname,$statename,$cityname)) . "<div></div></div></div></div>";
                 } else if ($value == "workshop") {
                     
                     $event_type = "Workshop";
@@ -1508,7 +1566,7 @@ function ajax_example_submit_driven_callback($form, &$form_state)
        					<input type='radio' id='tab-1' name='tab-group-1' checked>
        					<label for='tab-1'>Textbook Companion</label>
       				 	<div class='tabcontent'><div id='tbctabledata' 	
-					style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', 'all', $startdate, $enddate, $cityname, $link_flag) . "</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "TBC", $startdate, $enddate, $cityname)) . "</div></div></div>";
+					style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', 'all', $startdate, $enddate,$countryname,$statename, $cityname,$link_flag) . "</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "TBC", $startdate, $enddate, $countryname,$statename,$cityname)) . "</div></div></div>";
         $form['default_load']['#markup'] = $pagecontent;
         $commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
         /* $form['default_load']['#markup'] = "<div class='tab-preview'>
@@ -1526,7 +1584,7 @@ function ajax_example_submit_driven_callback($form, &$form_state)
        					<input type='radio' id='tab-1' name='tab-group-1' checked>
        					<label for='tab-1'>Lab Migration</label>
       				 	<div class='tabcontent'><div id='lmtabledata' 	
-					style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "all", $startdate, $enddate, $cityname, $link_flag) . "</div><div id='lmchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "LM", $startdate, $cityname)) . "</div></div></div>
+					style='float:left;width:280px;height:200px'>" . get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "all", $startdate, $enddate,$countryname,$statename, $cityname, $link_flag) . "</div><div id='lmchartdata' style='float:left;width:250px;height:200px;'>" . drupal_render(getchartforselectedProject($foss_type, "LM", $startdate, $enddate,$countryname,$statename, $cityname)) . "</div></div></div>
 					";
         $commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
         
@@ -1563,16 +1621,16 @@ function ajax_example_submit_driven_callback($form, &$form_state)
     } else if ($foss_type != '--------------' && ($foss_sub_project == "Textbook Companion" || $foss_sub_project == "Lab Migration") && $foss_sub_project_status != "--------------") {
         if ($foss_sub_project == "Textbook Companion" && $foss_sub_project_status == "Completed Books") {
             $title = "Textbook Companion";
-            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', "completed", $startdate, $enddate, $cityname, $link_flag);
+            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', "completed", $startdate, $enddate,$countryname,$statename, $cityname, $link_flag);
         } else if ($foss_sub_project == "Lab Migration" && $foss_sub_project_status == "Completed Labs") {
             $title = "Lab Migration";
-            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "completed", $startdate, $enddate, $cityname, $link_flag);
+            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "completed", $startdate, $enddate, $countryname,$statename, $cityname, $link_flag);
         } else if ($foss_sub_project == "Textbook Companion" && $foss_sub_project_status == "Books in Progress") {
             $title = "Textbook Companion";
-            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', "pending", $startdate, $enddate, $cityname, $link_flag);
+            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'TBC', "pending", $startdate, $enddate, $countryname,$statename, $cityname, $link_flag);
         } else if ($foss_sub_project == "Lab Migration" && $foss_sub_project_status == "Labs in Progress") {
             $title = "Lab Migration";
-            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "pending", $startdate, $enddate, $cityname, $link_flag);
+            $datatable = get_tabledata_selectedFoss_TBC_LM($foss_type, 'LM', "pending", $startdate, $enddate, $countryname,$statename, $cityname, $link_flag);
         }
         $form['displaytext']['#markup'] = "Statistic of project : " . $foss_type;
         $commands[] = ajax_command_html("#displaytext", drupal_render($form['displaytext']));
@@ -1795,9 +1853,12 @@ function get_tabledata_TBC_or_LM($sub_type, $startdate, $enddate)
 }
 
 
-function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $startdate, $enddate, $extrafilter, $link_flag)
+function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $startdate, $enddate,$countryname,$statename, $cityname, $link_flag)
 {
-    if ($status == "all") {
+    
+///var_dump($foss_type."....".$sub_type."....". $status."....". $startdate."....". $enddate."....".$countryname."....".$statename."....". $cityname."....". $link_flag);
+//die;
+if ($status == "all") {
         $rows = array();
         if ($sub_type == 'TBC') {
             $headers = array(
@@ -1831,20 +1892,20 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                 if ($foss_detail->foss_name != 'eSim' && $foss_detail->foss_name != 'OpenFOAM' && $foss_detail->foss_name != 'OR-Tools') {
                     if ($foss_detail->foss_name != 'DWSIM') {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     } else {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     }
                 } else {
                     $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.book LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                        ':value' => "%" . db_like($extrafilter) . "%",
+                        ':value' =>$cityname,
                         ':startdate' => $startdate,
                         ':enddate' => $enddate
                     ));
@@ -1857,20 +1918,20 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                 if ($foss_detail->foss_name != 'eSim' && $foss_detail->foss_name != 'OpenFOAM' && $foss_detail->foss_name != 'OR-Tools') {
                     if ($foss_detail->foss_name != 'DWSIM') {
                         $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate ", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     } else {
                         $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     }
                 } else {
                     $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                        ':value' => "%" . db_like($extrafilter) . "%",
+                        ':value' => $cityname,
                         ':startdate' => $startdate,
                         ':enddate' => $enddate
                     ));
@@ -1945,7 +2006,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
             $foss_detail = $result->fetchObject();
             db_set_active($foss_detail->foss_name); //Active other database
             $query2 = db_query("SELECT COUNT(*) AS count from lab_migration_proposal WHERE approval_status=3 AND city 			LIKE :value AND FROM_UNIXTIME(approval_date) >=:startdate AND FROM_UNIXTIME(approval_date) <=:enddate", array(
-                ':value' => "%" . db_like($extrafilter) . "%",
+                ':value' => $cityname,
                 ':startdate' => $startdate,
                 ':enddate' => $enddate
             ));
@@ -1955,7 +2016,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                 $completedlabcount = $clink;
             }
             $query3 = db_query("SELECT COUNT(*) AS count from lab_migration_proposal WHERE approval_status=1 AND city 			LIKE :value AND FROM_UNIXTIME(approval_date) >=:startdate AND FROM_UNIXTIME(approval_date) <=:enddate", array(
-                ':value' => "%" . db_like($extrafilter) . "%",
+                ':value' => $cityname,
                 ':startdate' => $startdate,
                 ':enddate' => $enddate
             ));
@@ -2004,20 +2065,20 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                 if ($foss_detail->foss_name != 'eSim' && $foss_detail->foss_name != 'OpenFOAM' && $foss_detail->foss_name != 'OR-Tools') {
                     if ($foss_detail->foss_name != 'DWSIM') {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     } else {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     }
                 } else {
                     $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                        ':value' => "%" . db_like($extrafilter) . "%",
+                        ':value' =>$cityname,
                         ':startdate' => $startdate,
                         ':enddate' => $enddate
                     ));
@@ -2072,7 +2133,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
             $foss_detail = $result->fetchObject();
             db_set_active($foss_detail->foss_name); //Active other database
             $query2 = db_query("SELECT COUNT(*) AS count from lab_migration_proposal WHERE approval_status=3 AND city 			LIKE :value AND FROM_UNIXTIME(approval_date) >=:startdate AND FROM_UNIXTIME(approval_date) <=:enddate", array(
-                ':value' => "%" . db_like($extrafilter) . "%",
+                ':value' => $cityname,
                 ':startdate' => $startdate,
                 ':enddate' => $enddate
             ));
@@ -2119,20 +2180,20 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                 if ($foss_detail->foss_name != 'eSim' && $foss_detail->foss_name != 'OpenFOAM' && $foss_detail->foss_name != 'OR-Tools') {
                     if ($foss_detail->foss_name != 'DWSIM') {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     } else {
                         $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
-                            ':value' => "%" . db_like($extrafilter) . "%",
+                            ':value' => $cityname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
                     }
                 } else {
                     $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND po.city LIKE :value AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
-                        ':value' => "%" . db_like($extrafilter) . "%",
+                        ':value' => $cityname,
                         ':startdate' => $startdate,
                         ':enddate' => $enddate
                     ));
@@ -2187,7 +2248,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
             $foss_detail = $result->fetchObject();
             db_set_active($foss_detail->foss_name); //Active other database
             $query2 = db_query("SELECT COUNT(*) AS count from lab_migration_proposal WHERE approval_status=1 AND city 			LIKE :value AND FROM_UNIXTIME(approval_date) >=:startdate AND FROM_UNIXTIME(approval_date) <=:enddate", array(
-                ':value' => "%" . db_like($extrafilter) . "%",
+                ':value' => $cityname,
                 ':startdate' => $startdate,
                 ':enddate' => $enddate
             ));
@@ -2408,7 +2469,8 @@ function ajax_city_list_dependent_dropdown_callback($form, &$form_state)
 
 function get_country_list($foss_type,$foss_sub_project)
 {
-    
+
+    if($foss_type!=0&&$foss_type!=3){
     if ($foss_sub_project != 0) {
         
         $query = db_select('foss_type');
@@ -2482,8 +2544,10 @@ function get_country_list($foss_type,$foss_sub_project)
         return $options;
     } else {
         $options = array();
+	$options[0] = '--------------';
         return $options;
     }
+}
 }
 
 
@@ -2494,7 +2558,7 @@ function get_country_list($foss_type,$foss_sub_project)
 function get_state_list($foss_type, $foss_sub_project, $country)
 {
     
-    if ($foss_sub_project != 0 && $country != "") {
+    if (($foss_type!=0&&$foss_type!=3)&&$foss_sub_project != 0 && $country != "") {
         
         $query = db_select('foss_type');
         $query->fields('foss_type', array(
@@ -2574,6 +2638,7 @@ function get_state_list($foss_type, $foss_sub_project, $country)
         return $options;
     } else {
         $options = array();
+	$options[0] = '--------------';
         return $options;
     }
 }
@@ -2581,7 +2646,7 @@ function get_state_list($foss_type, $foss_sub_project, $country)
 function get_city_list($foss_type, $foss_sub_project, $country, $state)
 {
     
-    if ($foss_sub_project != 0 && $country != "" && $state != "") {
+    if (($foss_type!=0&&$foss_type!=3)&&$foss_sub_project != 0 && $country != "" && $state != "") {
         
         $query = db_select('foss_type');
         $query->fields('foss_type', array(
@@ -4364,8 +4429,7 @@ function workshop_edit_all($workshop_id = 0)
 
 function events_view_filter($foss_name, $event_type, $startdate, $enddate, $countryname, $statename, $cityname)
 {
-    var_dump($foss_name);
-die;
+    
     $page_content = "";
     $headers = array(
         "Name",
@@ -4405,18 +4469,21 @@ die;
         $cityname = trim($cityname);
     }
     
-    
+    //var_dump($event_type."...".$foss_name."...".$countryname."...".$statename."...".$cityname."...".$startdate."...".$enddate);
+//die;
     $rows = array();
     $query = db_select('workshop');
     $query->fields('workshop');
     $query->condition('type', $event_type);
     $query->condition('foss_name', $foss_name);
+    $query->condition('country', $countryname, 'LIKE');
     $query->condition('state', $statename, 'LIKE');
     $query->condition('city', $cityname, 'LIKE');
     $query->condition('startdate', $startdate, '>=');
     $query->condition('startdate', $enddate, '<=');
     $query->orderBy('startdate', 'DESC');
     $result = $query->execute();
+
     while ($row = $result->fetchObject()) {
         $item = array(
             $row->w_name,
