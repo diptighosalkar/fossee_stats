@@ -1,0 +1,1644 @@
+<?php 
+
+	function fossee_stats_permission() {
+		return array(
+			"access fossee_stats" => array(
+			"title" => t("Access fossee_stats"),
+			"description" => t("Allows users to view fossee stats.")
+			),
+			
+		);
+	}
+
+	function fossee_stats_menu() {
+		$items = array();
+		$items["fossee-stats"] = array(
+			"title" => "FOSSEE STATS",
+			"page callback" => "drupal_get_form",
+			"page arguments" => array("fossee_stats_form"),
+			"access arguments" => array("access fossee_stats"),
+			"type" => MENU_NORMAL_ITEM,
+		);
+		 /* $items['author/autocomplete/%'] = array(
+    			'page callback' => '_author_name_autocomplete',
+			'page arguments' => array(2), 
+			'access arguments' => array("access fossee_stats"),
+    			'type' => MENU_CALLBACK
+  			);*/
+		 $items['city/autocomplete/%'] = array(
+    			'page callback' => '_city_name_autocomplete',
+			'page arguments' => array(2), 
+			'access arguments' => array('access fossee_stats'),
+    			'type' => MENU_CALLBACK
+  			);
+
+			
+		return $items;
+	}
+		
+
+	function fossee_stats_form($form, &$form_state) {
+
+	        $options_first = _ajax_example_get_first_dropdown_options();
+
+		if(isset($form_state['values']['foss_sub_project'])&&isset($form_state['values']['foss_type'])&&isset($form_state['values']['foss_sub_project_status'])){
+		 	$foss_project = isset($form_state['values']['foss_type']) ? $form_state['values']['foss_type'] : key	($options_first);
+		}else{
+			$foss_project = '';
+		}
+		
+		$form['foss_type'] = array(
+	
+			'#type' => 'select',
+			'#prefix' => '<div class="content"><div><table><tr><td>',
+          		'#suffix' => '</td>',
+			'#title' => t('FOSS Type'),
+			'#options' => $options_first,
+			'#default_value' => $foss_project,
+			'#validated'=>TRUE,
+			//'#attributes' => array('id' => 'ffoss_type'),
+          		'#ajax' => array(
+            		 	'callback' =>'ajax_foss_type_dependent_dropdown_callback',
+            			'wrapper' => array('dropdown-second-replace','extra'),
+				'progress' => array(
+                			'message' => '',
+           			 ),
+          		),
+        	);
+
+
+         	if(isset($form_state['values']['foss_sub_project'])&&isset($form_state['values']['foss_type'])&&isset($form_state['values']['foss_sub_project_status'])){
+            		$foss_sub_project = isset($form_state['values']['foss_sub_project']) ? $form_state['values']['foss_sub_project'] : key(_ajax_example_get_second_dropdown_options($foss_project));
+         	}else{
+            		$foss_sub_project = '';
+          	}
+
+      		$form['foss_sub_project'] = array(
+          		'#type' => 'select',
+          		'#title' => t('Foss Sub Project'),
+          		'#options' => _ajax_example_get_second_dropdown_options($foss_project),
+          		'#prefix' => '<td><div id="dropdown-second-replace" style="width:250px;padding-left:25px">',
+          		'#suffix' => '</div>',
+          		'#default_value' => $foss_sub_project,
+			'#validated'=>TRUE,
+          		'#ajax' => array(
+            			'callback' =>'ajax_foss_sub_project_dependent_dropdown_callback',
+            			'wrapper' => 'dropdown-third-replace',
+				'progress' => array(
+                			'message' => '',
+           			 ), 
+         		 ),
+        	);
+
+
+         if(isset($form_state['values']['foss_sub_project'])&&isset($form_state['values']['foss_type'])&&isset($form_state['values']['foss_sub_project_status'])){
+         		$foss_sub_project_status = isset($form_state['values']['$foss_sub_project_status']) ? $form_state['values']['$foss_sub_project_status'] : '';
+        	}else{
+       	 		$foss_sub_project_status = '';
+        	}
+        
+       		$form['foss_sub_project_status'] = array(
+          		'#type' => 'select',
+          		'#title' => t('Status'),
+          		'#options' => _ajax_example_get_third_dropdown_options($foss_sub_project),
+          		'#prefix' => '<td><div id="dropdown-third-replace" style="width:250px">',
+          		'#suffix' => '</div></td></tr>',
+          		'#default_value' => $foss_sub_project_status,
+			'#validated'=>TRUE,
+        	);
+        
+	
+
+       		$form['start_date'] = array(
+        		'#type' => 'date_popup',
+ 			'#title' => t('From Date:'),
+			'#date_label_position' => '',
+        		'#description' => '',
+        		'#default_value' =>'',
+        		'#date_format' => 'Y-m-d',
+        		'#date_increment' => 0,
+        		'#date_year_range' => '2011:+0',
+			'#prefix' => '<tr><td><div id="startdate">',
+          		'#suffix' => '</div></td>',
+			'#datepicker_options' => array(
+    			 'maxDate' => 0,
+  			),
+			'#states' => array(
+            		'invisible' => array(
+                	':input[name="foss_type"]' => array('value' => ""),
+			
+           		 ),
+       			 ),
+      		);
+
+		$form['end_date'] = array(
+        		'#type' => 'date_popup',
+ 			'#title' => t('To Date:'),
+			'#date_label_position' => '',
+        		'#description' => '',
+        		'#default_value' =>'',
+        		'#date_format' => 'Y-m-d',
+        		'#date_increment' => 0,
+        		'#date_year_range' => '2011:+0',
+			'#prefix' => '<td><div id="enddate" style="padding-left:15px;">',
+          		'#suffix' => '</div></td>',
+			'#datepicker_options' => array(
+    			 'maxDate' => 0,
+  			),
+			'#states' => array(
+            		'invisible' => array(
+                	':input[name="foss_type"]' => array('value' => ""),
+			
+           		 ),
+       			 ),
+      		);
+			
+      		/*	$form['authorname'] = array(
+			"#type" => "textfield",
+            		"#title" => t("Author Name"),
+			"#autocomplete_path" => "author/autocomplete/",	
+            		'#prefix' => '<td><div id= "load_author" style="padding-left:25px;" >',
+          		'#suffix' => '</div>',
+			"#description" => t("Please enter keyword"),
+      			'#states' => array(
+            		'visible' => array(
+                	':input[name="foss_sub_project"]' => array('value' => 1),
+           		 ),
+       			 ),
+            	
+        	);*/
+			
+			$form['cityname'] = array( 
+			"#type" => "textfield",
+            		"#title" => t("City Name"),
+			"#autocomplete_path" => "city/autocomplete/",		          		
+            		'#prefix' => '<td><div id= "load_city">',
+          		'#suffix' => '</div></td></tr>',
+            		"#description" => t("Please enter keyword"),
+      			'#states' => array(
+            		'invisible' => array(
+                	':input[name="foss_sub_project"]' => array('value' => 0),
+           		 ),
+       			 ),
+      			
+            	
+        	);
+
+		
+			
+        	$form['submit'] = array(
+          		'#type' => 'submit',
+			 	'#ajax' => array(
+					'callback' => 'ajax_example_submit_driven_callback',
+					'progress' => array(
+                			'message' => '',
+           			 	), 
+				 ),
+			'#value' => t('Filter'),
+			'#attributes' => array('style' => 'width:100px;background-color:#4F4C14;color:#fff'),
+			'#prefix' => '<tr><td></td><td align="center">',
+          		'#suffix' => '</td>',
+        	);
+
+         	$form['reset'] = array(
+          		'#type' => 'submit',
+          		'#value' => t('Reset'),
+			'#attributes' => array('style' => 'width:100px;background-color:#4F4C14;color:#fff'),
+			'#prefix' => '<td align="left">',
+          		'#suffix' => '</td></tr></table></div>',
+       		 );
+
+		$form['displaytext'] = array(
+			'#type' => 'markup',
+			'#prefix' => '<div><table><tr><td><div id="displaytext" style="font-weight:bold;padding-top:10px">',
+			'#suffix' => '</div></td></tr></table></div>',
+			'#markup' => '',
+		);
+
+		
+		
+		$form['tbctable'] = array(
+			'#type' => 'item',
+			'#prefix'=>'<div id="default_load" class="tab-previews">',
+			'#markup' => '<div class="tab-preview">
+       					<input type="radio" id="tab-1" name="tab-group-1" checked>
+       					<label for="tab-1">Textbook Companion</label>
+      				 	<div class="tabcontent"><div id="tbctabledata"   						style="float:left;width:280px;height:200px">'.get_tabledata_TBC_or_LM("TBC","1960/01/01"),
+        		 
+			
+		);
+		$form['tbcchart'] = array(
+			'#type' => 'item',
+			'#markup' => '<div id="tbcchartdata" style="float:left;width:250px;height:200px;">'.drupal_render(getchart("TBC")).'</div></div></div></div>',
+			
+		);
+		
+		$form['lmtable'] = array(
+			'#type' => 'item',
+			'#markup' => '<div class="tab-preview">
+       			<input type="radio" id="tab-2" name="tab-group-1">
+       			<label for="tab-2">Lab Migration</label>
+       			<div class="tabcontent"><div id="lmtabledata" style="float:left;width:280px;height:200px">'.get_tabledata_TBC_or_LM("LM","1960/01/01"),
+			
+			
+		);
+		$form['lmchart'] = array(
+			'#type' => 'item',
+			'#markup' => '<div id="lmchartdata" style="float:left;width:250px;height:200px;">'.drupal_render(getchart("LM")).'</div></div></div></div>',
+			'#suffix'=>'</div>',
+		);
+		$form['lastdiv'] = array(
+			'#type' => 'item',
+			'#markup' => '',
+			'#suffix'=>'</div>',
+		);
+        
+        return $form;
+        }
+    
+   function getchart($sub_type){
+	$title="";
+	if($sub_type=="TBC"){
+		$title="Textbook Companion Statictics";
+	}else{
+		$title="Lab Migration Statistics";
+	}
+     $chart = array(
+    '#type' => 'chart',
+    '#title' => t($title),
+    '#chart_type' => 'pie',
+    '#chart_library' => 'google',
+    '#legend_position' => 'right',
+    '#data_labels' => TRUE,
+    '#tooltips' => TRUE,
+    '#width'=>500,
+  	);
+    $chart['pie_data'] = array(
+    '#type' => 'chart_data',
+    '#title' => t($title),
+    '#data' => get_data_for_chart_allproject($sub_type),
+  	);
+
+     $example['chart'] = $chart;
+
+   return $example;
+  }
+
+
+function getchartforselectedProject($foss_type,$sub_type,$startdate,$extrafilter){
+	$title="";
+	if($sub_type=="TBC"){
+		$title=$foss_type.""."'s Textbook Companion Statictics";
+	}else{
+		$title=$foss_type.""."'s Lab Migration Statistics";
+	}
+$chart = array(
+    '#type' => 'chart',
+    '#title' => t($title),
+    '#chart_type' => 'pie',
+    '#chart_library' => 'google',
+    '#legend_position' => 'right',
+    '#data_labels' => TRUE,
+    '#tooltips' => TRUE,
+    '#width'=>450,
+  );
+  $chart['pie_data'] = array(
+    '#type' => 'chart_data',
+    '#title' => t($title),
+    '#data' => get_data_for_chart_selectedproject($foss_type,$sub_type,$startdate,$extrafilter),
+  );
+
+  $example['chart'] = $chart;
+
+ return $example;
+}
+
+
+  function get_data_for_chart_allproject($sub_type){
+
+	 $rows=array();
+	if($sub_type=="TBC"){
+
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('tbc'));
+	   $query->condition('tbc', 1);
+	   $result = $query->execute();
+	  
+	    while ($foss_detail = $result->fetchObject())
+                {
+		
+		if($foss_detail->foss_name!=null){
+		if($foss_detail->foss_name!='Python'){
+		db_set_active($foss_detail->foss_name);//Active other database
+		
+		//For TBC
+		if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0");
+			}else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1");
+			}
+		db_set_active('default'); // We need to call the main (drupal) db back
+		db_set_active();
+		$completedbookcount = $query2->fetchObject()->book_count;
+
+		$option1=array(
+		$foss_detail->foss_name,
+		(int)$completedbookcount,
+		);
+		 array_push($rows, $option1);
+
+	}else{
+
+		db_set_active($foss_detail->foss_name);//Active other database
+		$query2 = db_select('tbc_book');
+		$query2->addExpression('count(*)', 'count');
+		$query2->condition('approved', 1);
+		$result2 = $query2->execute();
+		db_set_active('default'); // We need to call the main (drupal) db back
+		db_set_active();
+		$completedbookcount = $result2->fetchObject()->count;
+		
+		$option1=array(
+		$foss_detail->foss_name,
+		(int)$completedbookcount,
+		);
+		 array_push($rows, $option1);
+		   }	
+		}
+	
+	    }
+
+	}else{
+
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('lab_migration'));
+	   $query->condition('lab_migration', 1);
+	   $result = $query->execute();
+	    while ($foss_detail = $result->fetchObject())
+                {
+		
+		if($foss_detail->foss_name!=null){
+		
+		db_set_active($foss_detail->foss_name);//Active other database
+		
+		//For LM
+		$query3 = db_select('lab_migration_proposal');
+		$query3->addExpression('count(*)', 'count');
+		$query3->condition('approval_status', 3);
+
+		$result3 = $query3->execute();
+		db_set_active('default'); // We need to call the main (drupal) db back
+		db_set_active();
+		$completedlabcount = $result3->fetchObject()->count;
+		$option1=array(
+		$foss_detail->foss_name,
+		(int)$completedlabcount,
+		);
+		 array_push($rows, $option1);
+		
+		}
+	
+	    }
+	}
+	return $rows;
+ }
+
+
+function get_data_for_chart_selectedproject($foss_type,$sub_type,$startdate,$extrafilter){
+
+	 $rows=array();
+	if($sub_type=="TBC"){
+
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('tbc'));
+	   $query->condition('tbc', 1);
+	   $query->condition('foss_name', $foss_type);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+	   
+		
+		if($foss_detail->foss_name!=null){
+		if($foss_detail->foss_name!='Python'){
+		$rows=array();
+		db_set_active($foss_detail->foss_name);//Active other database
+		
+		//For TBC
+		if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+			if($foss_detail->foss_name!='DWSIM'){
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));}else{
+
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+
+		}
+
+			}else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+			}
+		db_set_active('default'); // We need to call the main (drupal) db back
+		db_set_active();
+		$completedbookcount = $query2->fetchObject()->book_count;
+		$pendingbookcount = $query3->fetchObject()->book_count;
+		$option1=array(
+		"Completed TBC",
+		(int)$completedbookcount,
+		);
+		 array_push($rows, $option1);
+		$option2=array(
+		"In Progress TBC",
+		(int)$pendingbookcount,
+		);
+		 array_push($rows, $option2);
+
+	}else{
+		$rows=array();
+		db_set_active($foss_detail->foss_name);//Active other database
+		$query2 = db_select('tbc_book');
+		$query2->addExpression('count(*)', 'count');
+		$query2->condition('author', '%'.$extrafilter.'%', 'LIKE');
+		$query2->condition('approved', 1);
+		$result2 = $query2->execute();
+
+		$query3 = db_select('tbc_book');
+		$query3->addExpression('count(*)', 'count');
+		$query3->condition('author', '%'.$extrafilter.'%', 'LIKE');
+		$query3->condition('approved', 1,'<>');
+		$result3 = $query3->execute();
+		db_set_active('default'); // We need to call the main (drupal) db back
+		db_set_active();
+		$completedbookcount = $result2->fetchObject()->count;
+		$pendingbookcount = $result3->fetchObject()->count;
+		$option1=array(
+		"Completed TBC",
+		(int)$completedbookcount,
+		);
+		 array_push($rows, $option1);
+		$option2=array(
+		"In Progress TBC",
+		(int)$pendingbookcount,
+		);
+		 array_push($rows, $option2);
+
+
+		   }	
+		}
+	
+	    
+
+	}else{
+		$rows=array();
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('lab_migration'));
+	   $query->condition('lab_migration', 1);
+	   $query->condition('foss_name',$foss_type);
+	   $result = $query->execute();
+	    $foss_detail = $result->fetchObject();
+                
+		
+		if($foss_detail->foss_name!=null){
+		
+		db_set_active($foss_detail->foss_name);//Active other database
+		
+		//For LM
+		$query3 = db_select('lab_migration_proposal');
+		$query3->addExpression('count(*)', 'count');
+		$query3->condition('approval_status', 3);
+		$query3->condition('city', '%'.$extrafilter.'%', 'LIKE');
+		$query3->where('FROM_UNIXTIME(approval_date) > :val',  array('val'=>$startdate));
+
+		$result3 = $query3->execute();
+
+		$query4 = db_select('lab_migration_proposal');
+		$query4->addExpression('count(*)', 'count');
+		$query4->condition('approval_status', 1);
+		$query4->condition('city', '%'.$extrafilter.'%', 'LIKE');
+		$query4->where('FROM_UNIXTIME(approval_date) > :val',  array('val'=>$startdate));
+
+		$result4 = $query4->execute();
+		db_set_active('default'); // We need to call the main (drupal) db back
+		db_set_active();
+		$completedlabcount = $result3->fetchObject()->count;
+		$pendinglabcount = $result4->fetchObject()->count;
+		$option1=array(
+		"Completed Labs",
+		(int)$completedlabcount,
+		);
+		 array_push($rows, $option1);
+
+		$option2=array(
+		"In Progress labs",
+		(int)$pendinglabcount,
+		);
+		 array_push($rows, $option2);
+		
+		}
+	
+	    
+	}
+	return $rows;
+ }
+
+	function _ajax_example_get_first_dropdown_options(){
+           $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+	   $result = $query->execute();
+           $options = array();
+           $options[''] = "--------------";
+              while ($foss_detail = $result->fetchObject())
+                {
+                 $options[$foss_detail->id] = $foss_detail->foss_name;
+                 }
+            return $options;
+      }
+      
+
+	function _ajax_example_get_second_dropdown_options($foss_project = ''){
+
+           if($foss_project != NULL){
+		 $query = db_select('foss_type');
+		 $query->fields('foss_type', array('tbc'));
+		 $query->fields('foss_type', array('lab_migration'));
+		 $query->condition('id',$foss_project);
+		 $result = $query->execute();
+		 $subproject_detail = $result->fetchObject();
+           	 $options = array();
+              
+		    if(($subproject_detail->tbc)!=0&&($subproject_detail->lab_migration)!=0){
+		       $options[0] = "--------------";
+		       $options[1] = "Textbook Companion";
+		       $options[2] = "Lab Migration";
+		    }else if(($subproject_detail->tbc)!=0&&($subproject_detail->lab_migration)==0){
+		       $options[0] = "--------------";
+		       $options[1] = "Textbook Companion";
+		    }else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)!=0){
+		       $options[0] = "--------------";
+		       $options[2] = "Lab Migration";
+		    }else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)==0) {
+		       $options[0] = "No Sub-Project Available";
+		    }else{
+		      $options[0] = "--------------";
+		      } 
+  
+            	    return $options;
+
+           }else{
+                     $options[0] = "--------------";
+                    return $options;
+               }
+        }
+
+           
+	function _ajax_example_get_third_dropdown_options($foss_sub_project=''){
+
+     	     $options = array();
+     	   if($foss_sub_project!=0){
+		        
+           	if($foss_sub_project==1){
+              	     $options[0] = "--------------";
+              	     $options[1] = "Books in Progress";
+                     $options[2] = "Completed Books";
+ 	    	 }else if($foss_sub_project==2){
+		     $options[0] = "--------------";
+		     $options[1] = "Labs in Progress";
+      		     $options[2] = "Completed Labs"; 	
+		 }else{
+		     $options[0] = "--------------";
+		 }
+		
+	     }else{
+		     $options[0] = "--------------";
+		  }
+
+              return $options;
+      }
+
+
+	
+	function ajax_foss_type_dependent_dropdown_callback($form, $form_state){
+		
+		$foss_sub_project=$form_state['values']['foss_type'];
+		$foss_tbc_lm_project=$form_state['values']['foss_sub_project'];
+		$startdate=$form_state['values']['start_date'];
+		$startdate=trim($startdate);
+		if($startdate==""){
+			$startdate='1960/01/01';
+		}else{
+			$startdate=$startdate;
+		}
+		if($foss_sub_project==""){
+		$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Textbook Companion</label>
+      				 	<div class='tabcontent'><div id='tbctabledata' 	
+					style='float:left;width:280px;height:200px'>"
+					.get_tabledata_TBC_or_LM("TBC",$startdate).
+					"</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchart("TBC"))."</div></div></div>
+					<div class='tab-preview'><input type='radio' id='tab-2' name='tab-group-1'>
+       					<label for='tab-2'>Lab Migration</label>
+      				 	<div class='tabcontent'><div id='lmtabledata'						   						style='float:left;width:280px;height:200px'>"
+					.get_tabledata_TBC_or_LM("LM",$startdate)."</div><div id='lmchartdata' 						style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchart("LM"))."</div></div></div>
+					";
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+			//$form['load_author']['#markup']="";
+			//$commands[] = ajax_command_html("#load_author", "");
+			$form['startdate']['#markup']="";
+			$commands[] = ajax_command_html("#startdate", "");
+			$form['enddate']['#markup']="";
+			$commands[] = ajax_command_html("#enddate", "");
+			$form['load_city']['#markup']="";
+			$commands[] = ajax_command_html("#load_city", "");
+			
+		
+		}else if($foss_sub_project=='3'){
+			$form['startdate']['#markup']="";
+			$commands[] = ajax_command_html("#startdate", "");
+			$form['enddate']['#markup']="";
+			$commands[] = ajax_command_html("#enddate", "");
+			}
+		else if($foss_sub_project=='7'||$foss_sub_project=='8'){
+			//$form['load_author']['#markup']="";
+			//$commands[] = ajax_command_html("#load_author", "");
+			$form['load_city']['#markup']="";
+			$commands[] = ajax_command_html("#load_city", "");
+
+		}else{
+			$form['start_date']['#type'] = "date_popup";
+ 			$form['start_date']['#title'] = t('From Date:');
+			$form['start_date']['#date_label_position'] = '';
+        		$form['start_date']['#description' ]= '';
+        		$form['start_date']['#default_value'] ='';
+        		$form['start_date']['#date_format'] = 'Y-m-d';
+        		$form['start_date']['#date_increment']= 0;
+        		$form['start_date']['#date_year_range'] = '2011:+0';
+			$form['start_date']['#datepicker_options'] = array('maxDate' => 0,);
+			$commands[] = ajax_command_html("#startdate", drupal_render($form['start_date']));
+
+			$form['end_date']['#type'] = "date_popup";
+ 			$form['end_date']['#title'] = t('To Date:');
+			$form['end_date']['#date_label_position'] = '';
+        		$form['end_date']['#description' ]= '';
+        		$form['end_date']['#default_value'] ='';
+        		$form['end_date']['#date_format'] = 'Y-m-d';
+        		$form['end_date']['#date_increment']= 0;
+        		$form['end_date']['#date_year_range'] = '2011:+0';
+			$form['end_date']['#datepicker_options'] = array('maxDate' => 0,);
+			$commands[] = ajax_command_html("#enddate", drupal_render($form['end_date']));
+		}
+		
+		$form['foss_sub_project_status']['#options']=_ajax_example_get_third_dropdown_options($foss_sub_project);
+		//$commands[] = ajax_command_replace("#startdate", drupal_render($form['start_date']));
+		$commands[] = ajax_command_replace("#dropdown-second-replace", drupal_render($form['foss_sub_project']));
+		$commands[] = ajax_command_replace("#dropdown-third-replace", drupal_render($form['foss_sub_project_status']));
+  		$commands[] = ajax_command_replace("#dropdown-fourth-replace", drupal_render($form['foss_select_branch']));
+		return array('#type' => 'ajax', '#commands' => $commands);
+	}
+
+
+
+	function ajax_foss_sub_project_dependent_dropdown_callback($form, $form_state){
+
+		$foss_project=$form_state['values']['foss_sub_project'];
+		$foss_type=$form_state['values']['foss_type'];
+		/*if($foss_project==1&&$foss_type!=""){
+			
+			$form['authorname']['#type']= "textfield";
+			$form['authorname']['#title']= t("Author Name");
+			$form['authorname']['#description']=t("Please enter keyword");
+			$form['authorname']['#autocomplete_path'] = "author/autocomplete/$foss_type";
+			$form['authorname']['#prefix']="<div style='padding-right:15px;'>";
+			$form['authorname']['#suffix']="</div>";
+			$commands[] = ajax_command_html("#load_author", drupal_render($form['authorname']));
+			$form['load_city']['#markup']="";
+			$commands[] = ajax_command_html("#load_city", "");
+			
+		}else */if($foss_type!=""&&$foss_project!=0){
+			$form['cityname']['#type']= "textfield";
+			$form['cityname']['#title']= t("City Name");
+			$form['cityname']['#description']=t("Please enter keyword");
+			$form['cityname']['#autocomplete_path'] = "city/autocomplete/$foss_type";
+			$form['cityname']['#prefix']="<div style='padding-right:15px;'>";
+			$form['cityname']['#suffix']="</div>";
+			$commands[] = ajax_command_html("#load_city", drupal_render($form['cityname']));
+			$form['load_author']['#markup']="";
+			$commands[] = ajax_command_html("#load_author", "");
+		}else{
+			$form['load_author']['#markup']="";
+			$commands[] = ajax_command_html("#load_author", "");
+			$form['load_city']['#markup']="";
+			$commands[] = ajax_command_html("#load_city", "");
+		}
+
+		
+  		$commands[] = ajax_command_replace("#dropdown-third-replace", drupal_render($form['foss_sub_project_status']));
+		$commands[] = ajax_command_replace("#dropdown-fourth-replace", drupal_render($form['foss_select_branch']));
+		return array('#type' => 'ajax', '#commands' => $commands);
+	}
+            
+ 	function ajax_example_submit_driven_callback($form, $form_state) {
+		
+		$foss_type=$form['foss_type']['#options'][$form_state['values']['foss_type']];
+		$foss_sub_project=$form['foss_sub_project']['#options'][$form_state['values']['foss_sub_project']];
+		$foss_sub_project_status=$form['foss_sub_project_status']['#options'][$form_state['values']['foss_sub_project_status']];
+		$startdate=$form_state['values']['start_date'];
+		$startdate=trim($startdate);
+		$authorname=$form_state['values']['authorname'];
+		$authorname=trim($authorname);
+		$cityname=$form_state['values']['cityname'];
+		$cityname=trim($cityname);
+		$link_flag=0;
+
+		if($foss_sub_project=="Textbook Companion"){
+			
+			if($authorname!=""||$startdate!=""){
+			 $link_flag=1;
+			}else{
+			 $link_flag=0;
+			}
+		
+			if($authorname==""){
+			   $authorname="";
+			}else{
+			   $authorname=$authorname;
+
+			}
+		}
+		if($foss_sub_project=="Lab Migration"){
+		
+			if($cityname==""){
+			   $cityname="";
+			}else{
+			   $cityname=$cityname;
+			}
+		}
+		
+		if($startdate==""){
+			$startdate='1960/01/01';
+		}else{
+			$startdate=$startdate;
+		}
+		if($foss_type=='--------------'){
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Textbook Companion</label>
+      				 	<div class='tabcontent'><div id='tbctabledata' 	
+					style='float:left;width:280px;height:200px'>"
+					.get_tabledata_TBC_or_LM("TBC",$startdate).
+					"</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchart("TBC"))."</div></div></div>
+					<div class='tab-preview'><input type='radio' id='tab-2' name='tab-group-1'>
+       					<label for='tab-2'>Lab Migration</label>
+      				 	<div class='tabcontent'><div id='lmtabledata'						   						style='float:left;width:280px;height:200px'>"
+					.get_tabledata_TBC_or_LM("LM",$startdate)."</div><div id='lmchartdata' 						style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchart("LM"))."</div></div></div>
+					";
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+
+		     }
+		else if($foss_type!='--------------'&&(($foss_sub_project=="--------------")||($foss_sub_project=="No Sub-Project Available"))&&$foss_sub_project_status=="--------------"){
+
+			$form['displaytext']['#markup']="Statistic of project : ".$foss_type;
+			$commands[] = ajax_command_html("#displaytext", drupal_render($form['displaytext']));
+			db_set_active('default'); // We need to call the main (drupal) db back      
+  		        db_set_active(); // without the paramater means set back to the default for the site
+			$queryt = db_select('foss_type');
+		 	$queryt->fields('foss_type', array('tbc'));
+		 	$queryt->fields('foss_type', array('lab_migration'));
+		 	$queryt->condition('foss_name',$foss_type);
+		 	$resultt = $queryt->execute();
+		 	$subproject_detail = $resultt->fetchObject();
+			if(($subproject_detail->tbc)!=0&&($subproject_detail->lab_migration)!=0){
+
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Textbook Companion</label>
+      				 	<div class='tabcontent'><div id='tbctabledata' 	
+					style='float:left;width:280px;height:200px'>"
+					.get_tabledata_selectedFoss_TBC_LM($foss_type,'TBC','all',$startdate,$authorname,$link_flag).
+					"</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchartforselectedProject($foss_type,"TBC",$startdate,$authorname))."</div></div></div>
+					<div class='tab-preview'><input type='radio' id='tab-2' name='tab-group-1'>
+       					<label for='tab-2'>Lab Migration</label>
+      				 	<div class='tabcontent'><div id='lmtabledata'						   						style='float:left;width:280px;height:200px'>"
+					.get_tabledata_selectedFoss_TBC_LM($foss_type,'LM',"all",$startdate,$cityname,$link_flag)."</div><div id='lmchartdata' 						style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchartforselectedProject($foss_type,"LM",$startdate,$cityname))."</div></div></div>
+					";
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+
+
+			}else if(($subproject_detail->tbc)!=0&&($subproject_detail->lab_migration)==0){
+
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Textbook Companion</label>
+      				 	<div class='tabcontent'><div id='tbctabledata' 	
+					style='float:left;width:280px;height:200px'>"
+					.get_tabledata_selectedFoss_TBC_LM($foss_type,'TBC',"all",$startdate,$authorname,$link_flag).
+					"</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchartforselectedProject($foss_type,"TBC",$startdate,$authorname))."</div></div></div>
+					<div class='tab-preview'><input type='radio' id='tab-2' name='tab-group-1'>
+       					<label for='tab-2'>Lab Migration</label>
+      				 	<div class='tabcontent'><div id='lmtabledata'						   						style='float:left;width:280px;height:200px'>".t("
+					<h5>Lab Migration Project Not Present</h5>")."</div></div></div>";
+
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+
+			}
+			else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)!=0){
+
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Textbook Companion</label>
+      				 	<div class='tabcontent'><div id='tbctabledata' 	
+					style='float:left;width:400px;height:200px'>".t("
+					<h5>TextBook Companion Project Not Present</h5>")."
+					</div></div></div>
+					<div class='tab-preview'><input type='radio' id='tab-2' name='tab-group-1' checked>
+       					<label for='tab-2'>Lab Migration</label>
+      				 	<div class='tabcontent'><div id='lmtabledata'						   						style='float:left;width:280px;height:200px'>"
+					.get_tabledata_selectedFoss_TBC_LM($foss_type,'LM',"all",$startdate,$cityname,$link_flag)."</div><div id='lmchartdata' 						style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchartforselectedProject($foss_type,"LM",$startdate,$cityname))."</div></div></div>
+					";
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+			
+			}
+
+
+			else if(($subproject_detail->tbc)==0&&($subproject_detail->lab_migration)==0){
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Textbook Companion</label>
+      				 	<div class='tabcontent'><div id='tbctabledata' 	
+					style='float:left;width:400px;height:200px'>".t("
+					<h5>TextBook Companion Project Not Present</h5>")."
+					</div></div></div>
+					<div class='tab-preview'><input type='radio' id='tab-2' name='tab-group-1'>
+       					<label for='tab-2'>Lab Migration</label>
+      				 	<div class='tabcontent'><div id='lmtabledata'						   						style='float:left;width:400px;height:200px'>".t("
+					<h5>Lab Migration Project Not Present</h5>")."
+					</div></div></div>
+					";
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+
+			}
+			
+		}else if($foss_type!='--------------'&&$foss_sub_project=="Textbook Companion"
+				&&$foss_sub_project_status=="--------------") {
+			$form['displaytext']['#markup']="Statistic of project : ".$foss_type;
+			$commands[] = ajax_command_html("#displaytext", drupal_render($form['displaytext']));
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Textbook Companion</label>
+      				 	<div class='tabcontent'><div id='tbctabledata' 	
+					style='float:left;width:280px;height:200px'>"
+					.get_tabledata_selectedFoss_TBC_LM($foss_type,'TBC',"all",$startdate,$authorname,$link_flag).
+					"</div><div id='tbcchartdata' style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchartforselectedProject($foss_type,"TBC",$startdate,$authorname))."</div></div></div>
+					";
+
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+		    
+			}else if($foss_type!='--------------'&&$foss_sub_project=="Lab Migration"
+				&&$foss_sub_project_status=="--------------"){
+			$form['displaytext']['#markup']="Statistic of project : ".$foss_type;
+			$commands[] = ajax_command_html("#displaytext", drupal_render($form['displaytext']));
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>Lab Migration</label>
+      				 	<div class='tabcontent'><div id='lmtabledata' 	
+					style='float:left;width:280px;height:200px'>"
+					.get_tabledata_selectedFoss_TBC_LM($foss_type,'LM',"all",$startdate,$cityname,$link_flag).
+					"</div><div id='lmchartdata' style='float:left;width:250px;height:200px;'>"
+					.drupal_render(getchartforselectedProject($foss_type,"LM",$startdate,$cityname))."</div></div></div>
+					";
+
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+
+			}
+			else if($foss_type!='--------------'&&$foss_sub_project!="--------------"
+			&&$foss_sub_project_status!="--------------"){
+
+
+			if($foss_sub_project=="Textbook Companion"&&$foss_sub_project_status=="Completed Books"){
+				$title="Textbook Companion";
+				$datatable=get_tabledata_selectedFoss_TBC_LM($foss_type,'TBC',"completed",$startdate,$authorname,$link_flag);
+			}
+			else if($foss_sub_project=="Lab Migration"&&$foss_sub_project_status=="Completed Labs"){
+				$title="Lab Migration";
+				$datatable=get_tabledata_selectedFoss_TBC_LM($foss_type,'LM',"completed",$startdate,$cityname,$link_flag);
+			}else if($foss_sub_project=="Textbook Companion"&&$foss_sub_project_status=="Books in Progress"){
+				$title="Textbook Companion";
+				$datatable=get_tabledata_selectedFoss_TBC_LM($foss_type,'TBC',"pending",$startdate,$authorname,$link_flag);
+			}else if($foss_sub_project=="Lab Migration"&&$foss_sub_project_status=="Labs in Progress"){
+				$title="Lab Migration";
+				$datatable=get_tabledata_selectedFoss_TBC_LM($foss_type,'LM',"pending",$startdate,$cityname,$link_flag);
+				
+			}
+			
+			$form['displaytext']['#markup']="Statistic of project : ".$foss_type;
+			$commands[] = ajax_command_html("#displaytext", drupal_render($form['displaytext']));
+			$form['default_load']['#markup']="<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' checked>
+       					<label for='tab-1'>".$title."</label>
+      				 	<div class='tabcontent'><div id='tabledata' 	
+					style='float:left;width:280px;height:200px'>"
+					.$datatable.
+					"</div></div></div></div>
+					";
+
+			$commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+			
+				
+			}
+
+ 	return array('#type' => 'ajax', '#commands' => $commands);
+	}
+
+    	function bootstrap_table_format($headers, $rows) {
+       		 $thead = "";
+       		 $tbody = "";
+        	foreach($headers as $header) {
+            		$thead .= "<th>{$header}</th>";
+        	}
+        	foreach($rows as $row){
+            	$tbody .= "<tr>";
+            		foreach($row as $data) {
+               		 $tbody .= "<td>{$data}</td>";
+            		}
+            	$tbody .= "</tr>";
+        	}
+        	$table = "
+			
+            		<table class='table table-bordered table-hover'>
+                	<thead>{$thead}</thead>
+                	<tbody>{$tbody}</tbody>
+            		</table>
+			
+        		";
+        	return $table;
+    	}
+
+
+	function get_tabledata_TBC_or_LM($sub_type,$date){
+	$rows=array();
+	   $headers = array(
+                	" Project", "Completed", "Pending",
+            		);
+	if($sub_type=='TBC'){
+
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('tbc'));
+	   $query->fields('foss_type', array('tbc_completed'));
+ 	   $query->fields('foss_type', array('tbc_pending'));
+	   $query->condition('tbc', 1);
+	   $result = $query->execute();
+	   
+	    while ($foss_detail = $result->fetchObject())
+                {
+		$foss_type=$foss_detail->foss_name;
+		db_set_active($foss_type);
+		if($foss_detail->foss_name!='Python'){
+			
+
+			db_set_active($foss_detail->foss_name);//Active other database
+			
+			
+			if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+			if($foss_detail->foss_name!='DWSIM'){
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND FROM_UNIXTIME(po.completion_date) > :date", array(':date'=>$date));
+			}else {
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':date'=>$date));
+			}
+			
+			}else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND FROM_UNIXTIME(po.completion_date) > :date", array(':date'=>$date));
+			}
+
+			$completedbookcount = $query2->fetchObject()->book_count;
+
+			if($foss_detail->tbc_completed!=""&&$foss_detail->tbc_completed!=null){
+				$clink="<a href=".$foss_detail->tbc_completed." target='_blank'>".$completedbookcount."</a>";
+				$completedbookcount=$clink;
+			}
+
+			
+			if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+
+			if($foss_detail->foss_name!='DWSIM'){
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND FROM_UNIXTIME(po.completion_date) > :date", array(':date'=>$date));
+			}else {
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1  AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':date'=>$date));
+			}
+			
+			}else{
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND FROM_UNIXTIME(po.completion_date) > :date", array(':date'=>$date));
+			}
+
+			$pendingbookcount = $query3->fetchObject()->book_count;
+
+			if($foss_detail->tbc_pending!=""&&$foss_detail->tbc_pending!=null){
+
+				$plink="<a href=".$foss_detail->tbc_pending." target='_blank'>".$pendingbookcount."</a>";
+				$pendingbookcount=$plink;
+			}
+
+			db_set_active('default'); // We need to call the main (drupal) db back      
+  			db_set_active(); // without the paramater means set back to the default for the site
+
+			
+                	$item = array(
+                   	$foss_detail->foss_name,
+                    	$completedbookcount,
+                    	$pendingbookcount);
+                	array_push($rows, $item);
+
+	}else{
+
+			
+		//For Python TBC
+			db_set_active($foss_detail->foss_name);//Active other database
+			
+			$query5 = db_select('tbc_book');
+			$query5->addExpression('count(*)', 'count');
+			$query5->condition('approved', 1);
+			$result5 = $query5->execute();
+			$completedbookcount = $result5->fetchObject()->count;
+			if($foss_detail->tbc_completed!=""&&$foss_detail->tbc_completed!=null){
+				$clink="<a href=".$foss_detail->tbc_completed." target='_blank'>".$completedbookcount."</a>";
+				$completedbookcount=$clink;
+			}
+
+			$query6 = db_select('tbc_book');
+			$query6->addExpression('count(*)', 'count');
+			$query6->condition('approved',1,'<>' );
+			$result6 = $query6->execute();
+			$pendingbookcount = $result6->fetchObject()->count;
+			if($foss_detail->tbc_pending!=""&&$foss_detail->tbc_pending!=null){
+				$plink="<a href=".$foss_detail->tbc_pending." target='_blank'>".$pendingbookcount."</a>";
+				$pendingbookcount=$plink;
+			}
+
+			db_set_active('default'); // We need to call the main (drupal) db back      
+  			db_set_active(); // without the paramater means set back to the default for the site
+                	$item = array(
+                   	$foss_detail->foss_name,
+                    	$completedbookcount,
+                    	$pendingbookcount,);
+                	array_push($rows, $item);
+		   }	
+
+	    }
+			
+	}else{
+
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('lab_migration'));
+	   $query->fields('foss_type', array('lm_completed'));
+ 	   $query->fields('foss_type', array('lm_pending'));
+	   $query->condition('lab_migration', 1);
+	   $result = $query->execute();
+	  
+	    while ($foss_detail = $result->fetchObject())
+                {
+			
+			db_set_active($foss_detail->foss_name);//Active other database
+			
+			$query2 = db_select('lab_migration_proposal');
+			$query2->addExpression('count(*)', 'count');
+			$query2->condition('approval_status', 3);
+			$result2 = $query2->execute();
+			$completedlabcount = $result2->fetchObject()->count;
+			if($foss_detail->lm_completed!=""&&$foss_detail->lm_completed!=null){
+				$clink="<a href=".$foss_detail->lm_completed." target='_blank'>".$completedlabcount."</a>";
+				$completedlabcount=$clink;
+			}
+
+			$query3 = db_select('lab_migration_proposal');
+			$query3->addExpression('count(*)', 'count');
+			$query3->condition('approval_status',1 );
+			$result3 = $query3->execute();
+			$pendinglabcount = $result3->fetchObject()->count;	
+			if($foss_detail->lm_pending!=""&&$foss_detail->lm_pending!=null){
+				$plink="<a href=".$foss_detail->lm_pending." target='_blank'>".$pendinglabcount."</a>";
+				$pendinglabcount=$plink;
+			}
+			
+ 		
+			$item = array(
+                   	$foss_detail->foss_name,
+                    	$completedlabcount,
+                    	$pendinglabcount,);
+                	array_push($rows, $item);
+		
+	    }
+
+
+	}
+			db_set_active('default'); // We need to call the main (drupal) db back      
+  			db_set_active(); // without the paramater means set back to the default for the site
+                        $count = bootstrap_table_format($headers, $rows);
+			return $count;
+			
+	}
+
+
+function get_tabledata_selectedFoss_TBC_LM($foss_type,$sub_type,$status,$startdate,$extrafilter,$link_flag){
+
+	   if($status=="all"){
+	   $rows=array();
+	   
+	if($sub_type=='TBC'){
+		$headers = array(
+                	 "Completed Book", "Book In Progress",
+            		);
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('tbc'));
+	   $query->fields('foss_type', array('tbc_completed'));
+ 	   $query->fields('foss_type', array('tbc_pending'));
+	   $query->condition('foss_name', $foss_type);
+	   $query->condition('tbc', 1);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+	   
+		$foss_type=$foss_detail->foss_name;
+		db_set_active($foss_type);
+		if($foss_detail->foss_name!='Python'){
+			
+			db_set_active($foss_detail->foss_name);//Active other database
+			//var_dump($extrafilter);
+			if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+				if($foss_detail->foss_name!='DWSIM'){
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+}else{
+$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+}
+//var_dump($query2);
+			}else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.book LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+			}
+
+			$completedbookcount = $query2->fetchObject()->book_count;
+
+			if($foss_detail->tbc_completed!=""&&$foss_detail->tbc_completed!=null&&$link_flag!=1){
+				$clink="<a href=".$foss_detail->tbc_completed." target='_blank'>".$completedbookcount."</a>";
+				$completedbookcount=$clink;
+			}
+
+			
+			if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+			if($foss_detail->foss_name!='DWSIM'){
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate)); }else{
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+
+}
+			}else{
+			$query3=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+			}
+
+			$pendingbookcount = $query3->fetchObject()->book_count;
+
+			if($foss_detail->tbc_pending!=""&&$foss_detail->tbc_pending!=null&&$link_flag!=1){
+				$plink="<a href=".$foss_detail->tbc_pending." target='_blank'>".$pendingbookcount."</a>";
+				$pendingbookcount=$plink;
+			}
+
+			//db_set_active('default'); // We need to call the main (drupal) db back      
+  			//db_set_active(); // without the paramater means set back to the default for the site
+
+			
+                	$item = array(
+                    	$completedbookcount,
+                    	$pendingbookcount);
+                	array_push($rows, $item);
+
+	}else{
+
+			
+		//For Python TBC
+			db_set_active($foss_detail->foss_name);//Active other database
+
+			$query5 = db_select('tbc_book');
+			$query5->addExpression('count(*)', 'count');
+			$query5->condition('approved', 1);
+			$query5->condition('author', '%'.$extrafilter.'%', 'LIKE');
+			$result5 = $query5->execute();
+			$completedbookcount = $result5->fetchObject()->count;
+			if($foss_detail->tbc_completed!=""&&$foss_detail->tbc_completed!=null&&$link_flag!=1){
+				$clink="<a href=".$foss_detail->tbc_completed." target='_blank'>".$completedbookcount."</a>";
+				$completedbookcount=$clink;
+			}
+
+			$query6 = db_select('tbc_book');
+			$query6->addExpression('count(*)', 'count');
+			$query6->condition('approved',1,'<>' );
+			$query6->condition('author', '%'.$extrafilter.'%', 'LIKE');
+			$result6 = $query6->execute();
+			$pendingbookcount = $result6->fetchObject()->count;
+			if($foss_detail->tbc_pending!=""&&$foss_detail->tbc_pending!=null&&$link_flag!=1){
+				$plink="<a href=".$foss_detail->tbc_pending." target='_blank'>".$pendingbookcount."</a>";
+				$pendingbookcount=$plink;
+			}
+
+			//db_set_active('default'); // We need to call the main (drupal) db back      
+  			//db_set_active(); // without the paramater means set back to the default for the site
+                	$item = array(
+                    	$completedbookcount,
+                    	$pendingbookcount,);
+                	array_push($rows, $item);
+		   }	
+
+	    
+			
+	}else{
+		$headers = array(
+                	 "Completed Labs", "Labs In Progress",
+            		);
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('lab_migration'));
+	   $query->fields('foss_type', array('lm_completed'));
+ 	   $query->fields('foss_type', array('lm_pending'));
+	   $query->condition('foss_name', $foss_type);
+	   $query->condition('lab_migration', 1);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+
+
+			db_set_active($foss_detail->foss_name);//Active other database
+			$query2 = db_select('lab_migration_proposal');
+			$query2->addExpression('count(*)', 'count');
+			$query2->condition('approval_status', 3);
+			$query2->condition('city', '%'.$extrafilter.'%', 'LIKE');
+			$query2->where('FROM_UNIXTIME(approval_date) > :val',  array('val'=>$startdate));
+			//$query2->condition('FROM_UNIXTIME(creation_date)', $startdate, '<');
+			$result2 = $query2->execute();
+			$completedlabcount = $result2->fetchObject()->count;
+			if($foss_detail->lm_completed!=""&&$foss_detail->lm_completed!=null&&$link_flag!=1){
+				$clink="<a href=".$foss_detail->lm_completed." target='_blank'>".$completedlabcount."</a>";
+				$completedlabcount=$clink;
+			}
+
+			$query3 = db_select('lab_migration_proposal');
+			$query3->addExpression('count(*)', 'count');
+			$query3->condition('approval_status',1 );
+			$query3->condition('city', '%'.$extrafilter.'%', 'LIKE');
+			$query3->where('FROM_UNIXTIME(approval_date) > :val',  array('val'=>$startdate));
+			//$query3->condition('FROM_UNIXTIME(creation_date)', $startdate, '<');
+			$result3 = $query3->execute();
+			$pendinglabcount = $result3->fetchObject()->count;	
+			if($foss_detail->lm_pending!=""&&$foss_detail->lm_pending!=null&&$link_flag!=1){
+				$plink="<a href=".$foss_detail->lm_pending." target='_blank'>".$pendinglabcount."</a>";
+				$pendinglabcount=$plink;
+			}
+				$item = array(
+                    		$completedlabcount,
+                    		$pendinglabcount,);
+                		array_push($rows, $item);
+ 		
+
+	}
+			db_set_active('default'); // We need to call the main (drupal) db back      
+  			db_set_active(); // without the paramater means set back to the default for the site
+                        $count = bootstrap_table_format($headers, $rows);
+			return $count;
+		
+	}else if($status=="completed"){
+	   $rows=array();
+	   
+	if($sub_type=='TBC'){
+	   $headers = array(
+                	 "Completed Book",
+            		);
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('tbc'));
+	   $query->fields('foss_type', array('tbc_completed'));
+	   $query->condition('foss_name', $foss_type);
+	   $query->condition('tbc', 1);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+	   
+		$foss_type=$foss_detail->foss_name;
+		db_set_active($foss_type);
+		if($foss_detail->foss_name!='Python'){
+			
+			db_set_active($foss_detail->foss_name);//Active other database
+			
+			if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+			if($foss_detail->foss_name!='DWSIM'){
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));  }else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+}
+			}else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+			}
+
+			$completedbookcount = $query2->fetchObject()->book_count;
+
+			if($foss_detail->tbc_completed!=""&&$foss_detail->tbc_completed!=null&&$link_flag!=1){
+				$clink="<a href=".$foss_detail->tbc_completed." target='_blank'>".$completedbookcount."</a>";
+				$completedbookcount=$clink;
+			}
+
+                	$item = array(
+                    	$completedbookcount,
+                    	);
+                	array_push($rows, $item);
+
+	}else{
+
+			
+		//For Python TBC
+			db_set_active($foss_detail->foss_name);//Active other database
+
+			$query5 = db_select('tbc_book');
+			$query5->addExpression('count(*)', 'count');
+			$query5->condition('approved', 1);
+			$query5->condition('author', '%'.$extrafilter.'%', 'LIKE');
+			$result5 = $query5->execute();
+			$completedbookcount = $result5->fetchObject()->count;
+			if($foss_detail->tbc_completed!=""&&$foss_detail->tbc_completed!=null&&$link_flag!=1){
+				$clink="<a href=".$foss_detail->tbc_completed." target='_blank'>".$completedbookcount."</a>";
+				$completedbookcount=$clink;
+			}
+
+                	$item = array(
+                    	$completedbookcount,
+                    	);
+                	array_push($rows, $item);
+		   }	
+
+	    
+			
+	}else{
+		$headers = array(
+                	 "Completed Labs",
+            		);
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('lab_migration'));
+	   $query->fields('foss_type', array('lm_completed'));
+	   $query->condition('foss_name', $foss_type);
+	   $query->condition('lab_migration', 1);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+
+
+			db_set_active($foss_detail->foss_name);//Active other database
+			$query2 = db_select('lab_migration_proposal');
+			$query2->addExpression('count(*)', 'count');
+			$query2->condition('approval_status', 3);
+			$query2->condition('city', '%'.$extrafilter.'%', 'LIKE');
+			$query2->where('FROM_UNIXTIME(approval_date) > :val',  array('val'=>$startdate));
+			$result2 = $query2->execute();
+			$completedlabcount = $result2->fetchObject()->count;
+			if($foss_detail->lm_completed!=""&&$foss_detail->lm_completed!=null&&$link_flag!=1){
+				$clink="<a href=".$foss_detail->lm_completed." target='_blank'>".$completedlabcount."</a>";
+				$completedlabcount=$clink;
+			}
+				$item = array(
+                    		$completedlabcount,
+                    		);
+                		array_push($rows, $item);
+ 		
+
+	}
+			db_set_active('default'); // We need to call the main (drupal) db back      
+  			db_set_active(); // without the paramater means set back to the default for the site
+                        $count = bootstrap_table_format($headers, $rows);
+			
+	}else if($status=="pending"){
+
+		$rows=array();
+	   
+	if($sub_type=='TBC'){
+	   $headers = array(
+                	 "Books in Progress",
+            		);
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('tbc'));
+	   $query->fields('foss_type', array('tbc_pending'));
+	   $query->condition('foss_name', $foss_type);
+	   $query->condition('tbc', 1);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+	   
+		$foss_type=$foss_detail->foss_name;
+		db_set_active($foss_type);
+		if($foss_detail->foss_name!='Python'){
+			
+			db_set_active($foss_detail->foss_name);//Active other database
+			
+			if($foss_detail->foss_name!='eSim'&&$foss_detail->foss_name!='OpenFOAM'&&$foss_detail->foss_name!='OR-Tools'){
+			if($foss_detail->foss_name!='DWSIM'){
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate)); }else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND pe.author LIKE :value AND FROM_UNIXTIME(po.actual_completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+
+		}
+			}else{
+			$query2=db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.author LIKE :value AND FROM_UNIXTIME(po.completion_date) > :date", array(':value' => "%".db_like($extrafilter)."%",':date'=>$startdate));
+			}
+
+			$pendingbookcount = $query2->fetchObject()->book_count;
+
+			if($foss_detail->tbc_pending!=""&&$foss_detail->tbc_pending!=null&&$link_flag!=1){
+				$plink="<a href=".$foss_detail->tbc_pending." target='_blank'>".$pendingbookcount."</a>";
+				$pendingbookcount=$plink;
+			}
+
+                	$item = array(
+                    	$pendingbookcount,
+                    	);
+                	array_push($rows, $item);
+
+	}else{
+
+			
+		//For Python TBC
+			db_set_active($foss_detail->foss_name);//Active other database
+
+			$query5 = db_select('tbc_book');
+			$query5->addExpression('count(*)', 'count');
+			$query5->condition('approved', 1,'<>');
+			$query5->condition('author', '%'.$extrafilter.'%', 'LIKE');
+			$result5 = $query5->execute();
+			$pendingbookcount = $result5->fetchObject()->count;
+			if($foss_detail->tbc_pending!=""&&$foss_detail->tbc_pending!=null&&$link_flag!=1){
+				$plink="<a href=".$foss_detail->tbc_pending." target='_blank'>".$pendingbookcount."</a>";
+				$pendingbookcount=$plink;
+			}
+
+                	$item = array(
+                    	$pendingbookcount,
+                    	);
+                	array_push($rows, $item);
+		   }	
+
+	    
+			
+	}else{
+		$headers = array(
+                	 "Labs in Progress",
+            		);
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+ 	   $query->fields('foss_type', array('lab_migration'));
+	   $query->fields('foss_type', array('lm_pending'));
+	   $query->condition('foss_name', $foss_type);
+	   $query->condition('lab_migration', 1);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+
+
+			db_set_active($foss_detail->foss_name);//Active other database
+			$query2 = db_select('lab_migration_proposal');
+			$query2->addExpression('count(*)', 'count');
+			$query2->condition('approval_status', 1);
+			$query2->condition('city', '%'.$extrafilter.'%', 'LIKE');
+			$query2->where('FROM_UNIXTIME(approval_date) > :val',  array('val'=>$startdate));
+			$result2 = $query2->execute();
+			$pendinglabcount = $result2->fetchObject()->count;
+			if($foss_detail->lm_pending!=""&&$foss_detail->lm_pending!=null&&$link_flag!=1){
+				$plink="<a href=".$foss_detail->lm_pending." target='_blank'>".$pendinglabcount."</a>";
+				$pendinglabcount=$plink;
+			}
+				$item = array(
+                    		$pendinglabcount,
+                    		);
+                		array_push($rows, $item);
+ 		
+
+	}
+			db_set_active('default'); // We need to call the main (drupal) db back      
+  			db_set_active(); // without the paramater means set back to the default for the site
+                        $count = bootstrap_table_format($headers, $rows);
+				
+
+			}
+return $count;
+	
+	}
+
+
+	function _author_name_autocomplete($foss_type,$string){
+	
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+	   $query->condition('id', $foss_type);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+
+	$matches = array();
+  	if($foss_detail->foss_name!='Python'){
+
+	db_set_active($foss_detail->foss_name);//Active other database
+ 	$query = db_select('textbook_companion_preference', 'pe');
+
+  	// Select rows that match the string
+  	$return = $query
+    	->fields('pe', array('author'))
+    	->condition('pe.author', '%' . db_like($string) . '%', 'LIKE')
+    	->range(0, 10)
+    	->execute();
+  	db_set_active('default'); // We need to call the main (drupal) db back      
+  	// add matches to $matches  
+ 	 foreach ($return as $row) {
+    	$matches[$row->author] = check_plain($row->author);
+  	}
+  
+  	// return for JS
+ 	 drupal_json_output($matches);
+
+	}else{
+
+	db_set_active($foss_detail->foss_name);//Active other database
+ 	$query = db_select('tbc_book', 'pe');
+
+  	// Select rows that match the string
+  	$return = $query
+    	->fields('pe', array('author'))
+    	->condition('pe.author', '%' . db_like($string) . '%', 'LIKE')
+    	->range(0, 10)
+    	->execute();
+  	db_set_active('default'); // We need to call the main (drupal) db back      
+  	// add matches to $matches  
+ 	 foreach ($return as $row) {
+    	$matches[$row->author] = check_plain($row->author);
+  	}
+  
+  	// return for JS
+ 	 drupal_json_output($matches);
+	}
+
+	}
+
+	function _city_name_autocomplete($foss_type,$string){
+	
+	   $query = db_select('foss_type');
+	   $query->fields('foss_type', array('id'));
+	   $query->fields('foss_type', array('foss_name'));
+	   $query->condition('id', $foss_type);
+	   $result = $query->execute();
+	   $foss_detail = $result->fetchObject();
+
+	 $matches = array();
+  
+  	// Some fantasy DB table which holds cities
+	db_set_active($foss_detail->foss_name);//Active other database
+ 	$query = db_select('lab_migration_proposal', 'lm');
+
+  	// Select rows that match the string
+  	$return = $query
+    	->fields('lm', array('city'))
+    	->condition('lm.city', '%' . db_like($string) . '%', 'LIKE')
+    	->range(0, 10)
+    	->execute();
+  	db_set_active('default'); // We need to call the main (drupal) db back      
+  	// add matches to $matches  
+ 	 foreach ($return as $row) {
+    	$matches[$row->city] = check_plain($row->city);
+  	}
+  
+  	// return for JS
+ 	 drupal_json_output($matches);
+
+	}
+
+
+
+function fossee_stats_init(){
+
+$path = drupal_get_path('module', 'fossee_stats');
+drupal_add_js($path . '/js/all_charts.js');
+drupal_add_css(drupal_get_path("module", "fossee_stats") . "/css/fossee_stats_base.css");
+drupal_add_css(drupal_get_path("module", "fossee_stats") . "/css/fossee_stats_main.css");
+
+}

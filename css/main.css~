@@ -1,0 +1,251 @@
+*, *:before, *:after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, dbody {
+  height: 80%;
+}
+
+body {
+  font: 14px/1 'Open Sans', sans-serif;
+  color: #555;
+  background: #eee;
+}
+
+h1 {
+  padding: 50px 0;
+  font-weight: 400;
+  text-align: center;
+}
+
+p {
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+main {
+  min-width: 320px;
+  max-width: 600px;
+  padding: 50px;
+  margin: 0 auto;
+  background: #fff;
+}
+
+section {
+  display: none;
+  padding: 20px 0 0;
+  border-top: 1px solid #ddd;
+}
+
+input {
+  display: none;
+}
+
+label {
+  display: inline-block;
+  margin: 0 0 -1px;
+  padding: 15px 25px;
+  font-weight: 600;
+  text-align: center;
+  color: #bbb;
+  border: 1px solid transparent;
+}
+
+label:before {
+  font-family: fontawesome;
+  font-weight: normal;
+  margin-right: 10px;
+}
+
+label[for*='1']:before { content: 'TBC'; }
+label[for*='2']:before { content: 'LM'; }
+label[for*='3']:before { content: 'W'; }
+label[for*='4']:before { content: 'SW'; }
+label[for*='5']:before { content: 'C/S'; }
+label[for*='6']:before { content: 'ST'; }
+label[for*='7']:before { content: 'PC'; }
+
+
+label:hover {
+  color: #888;
+  cursor: pointer;
+}
+
+input:checked + label {
+  color: #555;
+  border: 1px solid #ddd;
+  border-top: 2px solid orange;
+  border-bottom: 1px solid #fff;
+}
+
+#tab1:checked ~ #content1,
+#tab2:checked ~ #content2,
+#tab3:checked ~ #content3,
+#tab4:checked ~ #content4,
+#tab5:checked ~ #content5,
+#tab6:checked ~ #content6,
+#tab7:checked ~ #content7 {
+  display: block;
+}
+
+@media screen and (max-width: 650px) {
+  label {
+    font-size: 0;
+  }
+  label:before {
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  label {
+    padding: 15px;
+  }
+}
+
+table {
+    border: 1px solid #ccc;
+    width: 80%;
+    margin:0;
+    padding:0;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+table tr {
+    border: 1px solid #ddd;
+    padding: 5px;
+}
+
+table th, table td {
+    padding: 10px;
+    text-align: center;
+}
+
+table th {
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+@media screen and (max-width: 600px) {
+    table {
+        border: 0;
+    }
+
+    table thead {
+        display: none;
+    }
+
+    table tr {
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    table tr:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+  
+    table tr:before {
+        display: block;
+        border-bottom: 2px solid #ddd;
+    }
+
+    table td {
+        box-sizing: border-box;
+        display: block;
+        float: left;
+        clear: left;
+        width: 100%;
+        text-align: right;
+        font-size: 13px;
+        border-bottom: 1px dotted #ccc;
+    }
+
+    table td:last-child {
+        border-bottom: 0;
+    }
+
+    table td:before {
+        content: attr(data-label);
+        float: left;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+}
+
+
+#testimonials-wrapper .testimonial {
+    position: relative;
+    text-align: justify;
+    margin: 25px 0 0 0;
+    padding: 0 0 10px 0;
+    background: #e5e5e5;
+    padding: 10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -o-border-radius: 5px;
+    border-radius: 5px;
+}
+#testimonials-wrapper .testimonial > .author {
+    text-align: right;
+    font-weight: bolder;
+    margin: 15px 0 0 0;
+    background: #ffffff;
+    padding: 10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -o-border-radius: 5px;
+    border-radius: 5px;
+}
+
+
+
+#testimonials_front{
+	padding: 10px 20px 15px 20px;
+	background:url('../images/open-quote.png') no-repeat ;
+	background-size: 22px 22px;
+	background-position: 18px 23px;
+	text-align:justify;
+	min-height:90px;
+	margin-top: 10px;
+	-moz-border-radius:12px;
+	-webkit-border-radius:12px;
+	border-radius:12px;
+	box-shadow: 1px 1px 4px 1px #888888;
+	height:135px;
+	
+}
+
+
+#testimonials_front a{
+	/* float:left; */
+}
+
+.testimonial_head
+{
+	
+	text-align:left;
+	margin-top:-14px;
+	font-size:16px;
+}
+
+#testimonials_front li{ display:none;}
+#testimonials_front li:first-child{ display:block;}
+
+#testimonials_front ul{ list-style:none;}
+
+
+#testimonials_front h4{
+color:#424242;
+margin-top:-20px;
+	
+}
+
+
+

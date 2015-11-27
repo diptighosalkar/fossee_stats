@@ -4364,8 +4364,7 @@ function workshop_edit_all($workshop_id = 0)
 
 function events_view_filter($foss_name, $event_type, $startdate, $enddate, $countryname, $statename, $cityname)
 {
-    var_dump($foss_name);
-die;
+    
     $page_content = "";
     $headers = array(
         "Name",
