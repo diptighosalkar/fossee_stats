@@ -43,7 +43,24 @@ function fossee_stats_menu()
         ),
         "type" => MENU_CALLBACK
     );
+    $items['completed-workshops-list'] = array(
+	'title' => '',
+        'page callback' => 'completed_workshops_list',
+	'page arguments' => array(
+            5
+        ),
+        "access arguments" => array(
+           "access fossee_stats"
+        ),
+	//'access callback' => TRUE,
+	 "type" => MENU_CALLBACK
+     );
     
+     $items['view-completed-workshop'] = array(
+     'title' => 'Workshop Details',
+     'page callback' => 'view_completed_workshop',
+     'access callback' => TRUE,
+                );
     //Following are menu of Events
     $items["events"] = array(
         "title" => "Events",
@@ -462,7 +479,7 @@ function fossee_stats_form($form, &$form_state)
         '#markup' => '<div class="tab-preview">
        					<input type="radio" id="tab-4" name="tab-group-1" >
        					<label for="tab-4">Self Workshop</label>
-      				 	<div class="tabcontent"><div id="selfworkshopdata">',
+      				 	<div class="tabcontent"><div id="selfworkshopdata">'.getselfworkshoplcount(0,"","","",""),
         '#suffix' => '</div></div></div>'
     );
     $form['conferencetable'] = array(
@@ -694,7 +711,7 @@ function list_tbc_and_lm_detail($String, $foss_type, $sub_type, $status, $startd
                         }
                     } else {
                         if ($status == "completed") {
-                            $query2 = db_query("SELECT pe.book,pe.author,pe.publisher,pe.year,pe.id  FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
+                            $query2 = db_query("SELECT pe.book,pe.author,pe.publisher,pe.year,pe.id  FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate ", array(
                                 ':city' => $cityname,
                                 ':state' => $statename,
                                 ':country' => $countryname,
@@ -703,7 +720,7 @@ function list_tbc_and_lm_detail($String, $foss_type, $sub_type, $status, $startd
                             ));
                         }
                         if ($status == "pending") {
-                            $query2 = db_query("SELECT pe.book,pe.author,pe.publisher,pe.year,pe.id FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate", array(
+                            $query2 = db_query("SELECT pe.book,pe.author,pe.publisher,pe.year,pe.id FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
                                 ':city' => $cityname,
                                 ':state' => $statename,
                                 ':country' => $countryname,
@@ -912,14 +929,14 @@ function get_data_for_chart_selectedproject($foss_type, $sub_type, $startdate, $
                             ':enddate' => $enddate
                         ));
                     } else {
-                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
+                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate ", array(
                             ':city' => $cityname,
                             ':state' => $statename,
                             ':country' => $countryname,
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
-                        $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate", array(
+                        $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
                             ':city' => $cityname,
                             ':state' => $statename,
                             ':country' => $countryname,
@@ -1380,8 +1397,6 @@ function ajax_example_submit_driven_callback($form, &$form_state)
     $cityname = trim($cityname);
     $statename = $form['statename']['#options'][$form_state['values']['statename']];
     $statename = trim($statename);
-    
-    
     $link_flag = 0;
     /*if ($foss_sub_project == "Lab Migration" || $foss_sub_project == "Textbook Companion") {
     if ($cityname != "" || $startdate != "" || $enddate != "" || $statename != "") {
@@ -1432,7 +1447,7 @@ function ajax_example_submit_driven_callback($form, &$form_state)
 					<div class='tab-preview'>
        					<input type='radio' id='tab-4' name='tab-group-1' >
        					<label for='tab-4'>Self Workshop</label>
-      				 	<div class='tabcontent'><div id='selfworkshop'></div></div></div>
+      				 	<div class='tabcontent'><div id='selfworkshop'>".getselfworkshoplcount(0,$startdate,$enddate,"","")."</div></div></div>
 					<div class='tab-preview'>
        					<input type='radio' id='tab-5' name='tab-group-1' >
        					<label for='tab-5'>Conference/Seminar</label>
@@ -1516,7 +1531,7 @@ function ajax_example_submit_driven_callback($form, &$form_state)
                     $pagecontent .= "<div class='tab-preview'>
        					<input type='radio' id='tab-4' name='tab-group-1' >
        					<label for='tab-4'>Self Workshop</label>
-      				 	<div class='tabcontent'></div></div>";
+      				 	<div class='tabcontent'><div id='selfworkshop'>".getselfworkshoplcount($foss_type,$startdate,$enddate, $statename, $cityname)."</div></div></div>";
                 } else if ($value == "conference_seminar") {
                     $event_type = "Conference/Seminar";
                     $pagecontent .= "<div class='tab-preview'>
@@ -1710,7 +1725,21 @@ function ajax_example_submit_driven_callback($form, &$form_state)
         $form['default_load']['#markup'] = $pagecontent;
         $commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
         
-    } else if ($foss_type != '--------------' && $foss_sub_project == "Conference/Seminar") {
+    } else if ($foss_type != '--------------' && $foss_sub_project == "Self Workshop") {
+        
+        $form['displaytext']['#markup'] = "Statistic of project : " . $foss_type;
+        $commands[] = ajax_command_html("#displaytext", drupal_render($form['displaytext']));
+       
+        $pagecontent = "";
+        $pagecontent .= "<div class='tab-preview'>
+       					<input type='radio' id='tab-1' name='tab-group-1' >
+       					<label for='tab-1'>Self Workshop</label>
+      				 	<div class='tabcontent'>" . getselfworkshoplcount($foss_type,$startdate,$enddate, $statename, $cityname). "</div></div>";
+        
+        $form['default_load']['#markup'] = $pagecontent;
+        $commands[] = ajax_command_html("#default_load", drupal_render($form['default_load']));
+        
+    }else if ($foss_type != '--------------' && $foss_sub_project == "Conference/Seminar") {
         
         $form['displaytext']['#markup'] = "Statistic of project : " . $foss_type;
         $commands[] = ajax_command_html("#displaytext", drupal_render($form['displaytext']));
@@ -1828,7 +1857,7 @@ function get_tabledata_TBC_or_LM($sub_type, $startdate, $enddate)
                             ':enddate' => $enddate
                         ));
                     } else {
-                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
+                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate ", array(
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
@@ -1851,7 +1880,7 @@ function get_tabledata_TBC_or_LM($sub_type, $startdate, $enddate)
                             ':enddate' => $enddate
                         ));
                     } else {
-                        $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1  AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
+                        $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1  AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate ", array(
                             ':startdate' => $startdate,
                             ':enddate' => $enddate
                         ));
@@ -2022,7 +2051,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                             ':enddate' => $enddate
                         ));
                     } else {
-                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate", array(
+                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
                             ':city' => $cityname,
                             ':state' => $statename,
                             ':country' => $countryname,
@@ -2061,7 +2090,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                             ':enddate' => $enddate
                         ));
                     } else {
-                        $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate", array(
+                        $query3 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate", array(
                             ':city' => $cityname,
                             ':state' => $statename,
                             ':country' => $countryname,
@@ -2234,7 +2263,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                             ':enddate' => $enddate
                         ));
                     } else {
-                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
+                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status =3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate ", array(
                             ':city' => $cityname,
                             ':state' => $statename,
                             ':country' => $countryname,
@@ -2369,7 +2398,7 @@ function get_tabledata_selectedFoss_TBC_LM($foss_type, $sub_type, $status, $star
                             ':enddate' => $enddate
                         ));
                     } else {
-                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.actual_completion_date) >= :startdate AND FROM_UNIXTIME(po.actual_completion_date) <= :enddate ", array(
+                        $query2 = db_query("SELECT COUNT( pe.book ) AS book_count FROM textbook_companion_preference pe LEFT JOIN textbook_companion_proposal po ON pe.proposal_id = po.id WHERE po.proposal_status !=3 AND pe.approval_status =1 AND pe.category>0 AND po.city LIKE :city AND po.state LIKE :state AND po.country LIKE :country AND FROM_UNIXTIME(po.completion_date) >= :startdate AND FROM_UNIXTIME(po.completion_date) <= :enddate ", array(
                             ':city' => $cityname,
                             ':state' => $statename,
                             ':country' => $countryname,
@@ -2476,8 +2505,9 @@ function ajax_state_list_dependent_dropdown_callback($form, &$form_state)
     $foss_type = $form['foss_type']['#options'][$form_state['values']['foss_type']];
     $foss_sub_project = $form['foss_sub_project']['#options'][$form_state['values']['foss_sub_project']];
     $country = $form['countryname']['#options'][$form_state['values']['countryname']];
-    $options = array();
     
+    $options = array();
+    if($country!="--------------"){
     if ($foss_sub_project == "Textbook Companion") {
         $sub_project = "textbook_companion_proposal";
         
@@ -2496,7 +2526,7 @@ function ajax_state_list_dependent_dropdown_callback($form, &$form_state)
             $options[$state_detail->state] = $state_detail->state;
         }
         
-    } else if ($foss_project == "Lab Migration") {
+    } else if ($foss_sub_project == "Lab Migration") {
         $sub_project = "lab_migration_proposal";
         
         db_set_active($foss_type); //Active other database
@@ -2514,7 +2544,7 @@ function ajax_state_list_dependent_dropdown_callback($form, &$form_state)
             $options[$state_detail->state] = $state_detail->state;
         }
         
-    } else {
+    } else if ($foss_sub_project == "Workshop") {
         $sub_project = "workshop";
         $foss_type_db = 'default';
         
@@ -2533,8 +2563,44 @@ function ajax_state_list_dependent_dropdown_callback($form, &$form_state)
         while ($state_detail = $result->fetchObject()) {
             $options[$state_detail->state] = $state_detail->state;
         }
+    }else if ($foss_sub_project == "Self Workshop"){
+
+
+        //Get self workshop foss number for spoken
+		
+	$query = db_select('foss_type');
+        $query->fields('foss_type', array(
+            'id'
+        ));
+        $query->fields('foss_type', array(
+            'foss_name'
+        ));
+	$query->fields('foss_type', array(
+            'foss_selfworkshop_no'
+        ));
+        $query->condition('foss_name', $foss_type);
+        $result = $query->execute();
+        $foss_detail = $result->fetchObject();
+	$foss_selfworkshop_no=$foss_detail->foss_selfworkshop_no;
+
+	    db_set_active('selfworkshop'); //Active other database
+            $options[0] = '--------------';
+            $query = "SELECT distinct (s.name) as state FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id )
+       ";
+            $args = array(
+                ":foss_id" => $foss_selfworkshop_no,
+            );
+            $result = db_query($query, $args);
+
+            while ($state_detail = $result->fetchObject()) {
+                $options[$state_detail->state] = $state_detail->state;
+		
+            }
+
     }
-    
+    }else{
+	 $options[0] = '--------------';
+	}
     
     db_set_active('default'); // We need to call the main (drupal) db back      
     
@@ -2578,7 +2644,7 @@ function ajax_city_list_dependent_dropdown_callback($form, &$form_state)
             $options[$city_detail->city] = $city_detail->city;
         }
         
-    } else if ($foss_project == "Lab Migration") {
+    } else if ($foss_sub_project == "Lab Migration") {
         $sub_project = "lab_migration_proposal";
         
         db_set_active($foss_type); //Active other database
@@ -2597,7 +2663,7 @@ function ajax_city_list_dependent_dropdown_callback($form, &$form_state)
             $options[$city_detail->city] = $city_detail->city;
         }
         
-    } else {
+    } else if ($foss_sub_project == "Workshop") {
         $sub_project = "workshop";
         $foss_type_db = 'default';
         
@@ -2617,7 +2683,41 @@ function ajax_city_list_dependent_dropdown_callback($form, &$form_state)
         while ($city_detail = $result->fetchObject()) {
             $options[$city_detail->city] = $city_detail->city;
         }
-    }
+    }else if ($foss_sub_project == "Self Workshop"){
+
+	//Get self workshop foss number for spoken
+		
+	$query = db_select('foss_type');
+        $query->fields('foss_type', array(
+            'id'
+        ));
+        $query->fields('foss_type', array(
+            'foss_name'
+        ));
+	$query->fields('foss_type', array(
+            'foss_selfworkshop_no'
+        ));
+        $query->condition('foss_name', $foss_type);
+        $result = $query->execute();
+        $foss_detail = $result->fetchObject();
+	$foss_selfworkshop_no=$foss_detail->foss_selfworkshop_no;
+	db_set_active('selfworkshop'); //Active other database
+        $options[0] = '--------------';
+
+	$query="SELECT distinct (c.name) as city FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id ) and s.name LIKE :statename";
+
+	$args = array(
+                ":foss_id" => $foss_selfworkshop_no,
+		":statename"=>$state,
+            );
+            $result = db_query($query, $args);
+
+            while ($city_detail = $result->fetchObject()) {
+                $options[$city_detail->city] = $city_detail->city;
+		
+            }
+
+     }
     
     
     db_set_active('default'); // We need to call the main (drupal) db back      
@@ -2700,6 +2800,11 @@ function get_country_list($foss_type, $foss_sub_project)
                     $options[$country_detail->country] = $country_detail->country;
                 }
                 
+            }else if ($foss_sub_project == 4) {
+                
+                $options[0] = '--------------';
+                $options[1] = 'India';
+                              
             }
             
             
@@ -2716,13 +2821,9 @@ function get_country_list($foss_type, $foss_sub_project)
 }
 
 
-
-
-
-
 function get_state_list($foss_type, $foss_sub_project, $country)
 {
-    
+
     if (($foss_type != 0 && $foss_type != 3) && $foss_sub_project != 0 && $country != "") {
         
         $query = db_select('foss_type');
@@ -2732,13 +2833,18 @@ function get_state_list($foss_type, $foss_sub_project, $country)
         $query->fields('foss_type', array(
             'foss_name'
         ));
+	$query->fields('foss_type', array(
+            'foss_selfworkshop_no'
+        ));
         $query->condition('id', $foss_type);
         $result = $query->execute();
         $foss_detail = $result->fetchObject();
         $foss_type = $foss_detail->foss_name;
+	$foss_selfworkshop_no=$foss_detail->foss_selfworkshop_no;
         $options = array();
-        
+       
         if ($foss_sub_project == 1) {
+		$options = array();
             $sub_project = "textbook_companion_proposal";
             
             db_set_active($foss_type); //Active other database
@@ -2758,9 +2864,9 @@ function get_state_list($foss_type, $foss_sub_project, $country)
             
         } else if ($foss_sub_project == 2) {
             $sub_project = "lab_migration_proposal";
-            
+            $options = array();
             db_set_active($foss_type); //Active other database
-            // $options    = array();
+           
             $options[0] = '--------------';
             $query = "
        SELECT * FROM " . $sub_project . "
@@ -2775,14 +2881,14 @@ function get_state_list($foss_type, $foss_sub_project, $country)
             }
             
         } else if ($foss_sub_project == 3) {
+$options = array();
             $sub_project = "workshop";
             $foss_type_db = 'default';
             
             db_set_active($foss_type_db); //Active other database
-            //$options    = array();
+           
             $options[0] = '--------------';
-            $query = "
-       SELECT * FROM " . $sub_project . "
+            $query = "SELECT * FROM " . $sub_project . "
        WHERE country = :country and foss_name = :foss_name
        ";
             $args = array(
@@ -2794,11 +2900,24 @@ function get_state_list($foss_type, $foss_sub_project, $country)
                 $options[$state_detail->state] = $state_detail->state;
             }
             
+        } else if ($foss_sub_project == 4) {
+           
+            db_set_active('selfworkshop'); //Active other database
+            $options[0] = '--------------';
+            $query = "SELECT distinct (s.name) as state FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id )
+       ";
+            $args = array(
+                ":foss_id" => $foss_selfworkshop_no,
+            );
+            $result = db_query($query, $args);
+
+            while ($state_detail = $result->fetchObject()) {
+                $options[$state_detail->state] = $state_detail->state;
+
+            }
+           
         }
-        
-        
         db_set_active('default'); // We need to call the main (drupal) db back 
-        
         
         return $options;
     } else {
@@ -2820,11 +2939,14 @@ function get_city_list($foss_type, $foss_sub_project, $country, $state)
         $query->fields('foss_type', array(
             'foss_name'
         ));
+	$query->fields('foss_type', array(
+            'foss_selfworkshop_no'
+        ));
         $query->condition('id', $foss_type);
         $result = $query->execute();
         $foss_detail = $result->fetchObject();
         $foss_type = $foss_detail->foss_name;
-        
+        $foss_selfworkshop_no=$foss_detail->foss_selfworkshop_no;
         if ($foss_sub_project == 1) {
             $sub_project = "textbook_companion_proposal";
             db_set_active($foss_type); //Active other database
@@ -2882,7 +3004,26 @@ function get_city_list($foss_type, $foss_sub_project, $country, $state)
             while ($city_detail = $result->fetchObject()) {
                 $options[$city_detail->city] = $city_detail->city;
             }
-        }
+        } else if ($foss_sub_project == 4) {
+
+		
+	db_set_active('selfworkshop'); //Active other database
+        $options[0] = '--------------';
+
+	$query="SELECT distinct (c.name) as city FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id ) and s.name LIKE :statename";
+
+	$args = array(
+                ":foss_id" => $foss_selfworkshop_no,
+		":statename"=>$state,
+            );
+            $result = db_query($query, $args);
+
+            while ($city_detail = $result->fetchObject()) {
+                $options[$city_detail->city] = $city_detail->city;
+		
+            }
+	
+	}
         
         
         
@@ -2909,90 +3050,7 @@ function workshop_add_form($form, &$form_state, $workshop_id = 0, $no_js_use = F
     $result = db_query($query, $args);
     $row = $result->fetchObject();
     $form = array();
-    /*
-    $form['testimonial_fieldset'] = array(
-    '#type' => 'fieldset',
-    '#tree'=>TRUE,
-    //'#title' => t('Add Testimonial'),
-    '#prefix' => '<div id="testimonial-fieldset-wrapper">',
-    '#suffix' => '</div>',
-    );
-    
-    if (empty($form_state['num_testimonial'])) {
-    $form_state['num_testimonial'] = 1;
-    }
-    $temp=0;
-    for ($i = 0; $i < $form_state['num_testimonial']; $i++) {
-    $temp=$i;
-    $form['testimonial_fieldset'][$i]["t_text"] = array(
-    "#type" => "item",
-    "#markup"=>"<h4><label>Testimonial : ".($temp+1)."</label></h4>"
-    );
-    $form['testimonial_fieldset'][$i]["t_name"] = array(
-    "#type" => "textfield",
-    "#title" => "Name",
-    "#default_value" => "",
-    //"#required" => TRUE
-    );
-    $form['testimonial_fieldset'][$i]["t_department"] = array(
-    "#type" => "textfield",
-    "#title" => "Department",
-    "#default_value" => "",
-    //"#required" => TRUE
-    );
-    $form['testimonial_fieldset'][$i]["t_university"] = array(
-    "#type" => "textfield",
-    "#title" => "University",
-    "#default_value" => "",
-    //"#required" => TRUE
-    );
-    $form['testimonial_fieldset'][$i]["t_body"] = array(
-    "#type" => "textarea",
-    "#title" => "Testimonial",
-    //"#required" => TRUE
-    );
-    
-    
-    }
-    
-    $form["testimonial_count"] = array(
-    "#type" => "hidden",
-    "#value" => $temp,
-    );
-    
-    
-    $form['testimonial_fieldset']['add_testimonial'] = array(
-    '#type' => 'submit',
-    '#value' => t('Add More Testimonial'),
-    '#limit_validation_errors' => array(),
-    '#submit' => array('testimonial_add_more_add_one'),
-    '#ajax' => array(
-    'callback' => 'testimonial_add_more_callback',
-    'wrapper' => 'testimonial-fieldset-wrapper',
-    ),
-    );
-    if ($form_state['num_testimonial'] > 1) {
-    $form['testimonial_fieldset']['remove_testimonial'] = array(
-    '#type' => 'submit',
-    '#value' => t('Remove Testimonial'),
-    '#limit_validation_errors' => array(),
-    '#submit' => array('testimonial_add_more_remove_one'),
-    '#ajax' => array(
-    'callback' => 'testimonial_add_more_callback',
-    'wrapper' => 'testimonial-fieldset-wrapper',
-    ),
-    );
-    }
-    
-    
-    if ($no_js_use) {
-    if (!empty($form['testimonial_fieldset']['remove_testimonial']['#ajax'])) {
-    unset($form['testimonial_fieldset']['remove_testimonial']['#ajax']);
-    }
-    unset($form['testimonial_fieldset']['add_testimonial']['#ajax']);
-    }    
-    
-    */
+   
     if ($workshop_id == 0) {
         $form['foss_select'] = array(
             '#type' => 'select',
@@ -4821,6 +4879,334 @@ function _list_of_cities()
     }
     return $city;
 }
+
+
+//Self Workshop from spoken db
+
+function getselfworkshoplcount($foss_name,$startdate,$enddate,$state,$city){
+
+	if($foss_name=="0"||$foss_name==""){
+	$foss_name="%";
+	}else{
+	$foss_name=$foss_name;
+	}
+
+	if ($city == "" || $city == "null") {
+        $city = "%";
+    } else {
+        $city = $city;
+    }
+
+    if ($state == "" || $state == "null") {
+        $state= "%";
+    } else {
+        $state = $state;
+    }
+	if ($startdate == "") {
+        $startdate = '1960-01-01';
+    } else {
+        $startdate = $startdate;
+    }
+    
+    if ($enddate == "") {
+        $enddate = date("Y-m-d");
+        //$enddate = "";
+    } else {
+        $enddate = $enddate;
+    }
+    $rows = array();
+    $page_content = "";
+    $headers = array(
+        "Foss Name",
+        "No. of Workshop Conducted",
+        
+    );
+    $query = db_select('foss_type');
+    $query->fields('foss_type', array(
+        'id'
+    ));
+    $query->fields('foss_type', array(
+        'foss_name'
+    ));
+    $query->fields('foss_type', array(
+        'foss_selfworkshop_no'
+    ));
+    $query->condition('foss_name', $foss_name, 'LIKE');
+    $query->condition('foss_selfworkshop_no', "null", '!=');
+    $result = $query->execute();
+    if($result!=null){
+	$page_content = "";
+
+if($city == "%"&&$state!="%"){
+$city="NONE";
+while ($foss_detail = $result->fetchObject()) {
+
+	    db_set_active('selfworkshop');
+	    $query2 = db_query("SELECT count(t.id) as count FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id ) and s.name LIKE :state AND t.tdate >= :startdate AND t.tdate <= :enddate ", array(
+                                ':foss_id' => $foss_detail->foss_selfworkshop_no,
+				':state'=>$state,
+				':startdate'=>$startdate,
+				':enddate'=>$enddate,
+                            ));
+
+	    $count = $query2->fetchObject()->count;
+
+	    db_set_active('default'); // We need to call the main (drupal) db back
+            db_set_active();
+   	    $item = array(
+            $foss_detail->foss_name,
+            "<a href=" . $GLOBALS['base_url']. "/completed-workshops-list/" . $foss_detail->foss_selfworkshop_no . "/" .$city."/".$state."/".$startdate."/".$enddate. " target='_blank' title='Click to view workshop list'>".$count."</a>"
+        	);
+		
+        array_push($rows, $item);
+    }
+
+
+}else if($state == "%"&&$city!="%"){
+$state="NONE";
+while ($foss_detail = $result->fetchObject()) {
+
+	    db_set_active('selfworkshop');
+	    $query2 = db_query("SELECT count(t.id) as count FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id ) and c.name LIKE :city  AND t.tdate >= :startdate AND t.tdate <= :enddate ", array(
+                                ':foss_id' => $foss_detail->foss_selfworkshop_no,
+				':city'=>$city,
+				
+				':startdate'=>$startdate,
+				':enddate'=>$enddate,
+                            ));
+
+	    $count = $query2->fetchObject()->count;
+
+	    db_set_active('default'); // We need to call the main (drupal) db back
+            db_set_active();
+   	    $item = array(
+            $foss_detail->foss_name,
+            "<a href=" . $GLOBALS['base_url']. "/completed-workshops-list/" . $foss_detail->foss_selfworkshop_no . "/" .$city."/".$state."/".$startdate."/".$enddate. " target='_blank' title='Click to view workshop list'>".$count."</a>"
+        	);
+		
+        array_push($rows, $item);
+    }
+
+}else if($city == "%"&&$state == "%"){
+$city="NONE";
+$state="NONE";
+while ($foss_detail = $result->fetchObject()) {
+
+	    db_set_active('selfworkshop');
+	    $query2 = db_query("SELECT count(t.id) as count FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id ) AND t.tdate >= :startdate AND t.tdate <= :enddate ", array(
+                                ':foss_id' => $foss_detail->foss_selfworkshop_no,
+				
+				':startdate'=>$startdate,
+				':enddate'=>$enddate,
+                            ));
+
+	    $count = $query2->fetchObject()->count;
+
+	    db_set_active('default'); // We need to call the main (drupal) db back
+            db_set_active();
+   	    $item = array(
+            $foss_detail->foss_name,
+            "<a href=" . $GLOBALS['base_url']. "/completed-workshops-list/" . $foss_detail->foss_selfworkshop_no . "/" .$city."/".$state."/".$startdate."/".$enddate. " target='_blank' title='Click to view workshop list'>".$count."</a>"
+        	);
+		
+        array_push($rows, $item);
+    }
+
+}else{
+
+while ($foss_detail = $result->fetchObject()) {
+
+	    db_set_active('selfworkshop');
+	    $query2 = db_query("SELECT count(t.id) as count FROM events_training t, events_academiccenter ac, events_city c, events_state s WHERE t.academic_id=ac.id and ac.city_id=c.id and c.state_id=s.id and (t.status = 4 AND t.foss_id = :foss_id ) and c.name LIKE :city and s.name LIKE :state AND t.tdate >= :startdate AND t.tdate <= :enddate ", array(
+                                ':foss_id' => $foss_detail->foss_selfworkshop_no,
+				':city'=>$city,
+				':state'=>$state,
+				':startdate'=>$startdate,
+				':enddate'=>$enddate,
+                            ));
+
+	    $count = $query2->fetchObject()->count;
+
+	    db_set_active('default'); // We need to call the main (drupal) db back
+            db_set_active();
+   	    $item = array(
+            $foss_detail->foss_name,
+            "<a href=" . $GLOBALS['base_url']. "/completed-workshops-list/" . $foss_detail->foss_selfworkshop_no . "/" .$city."/".$state."/".$startdate."/".$enddate. " target='_blank' title='Click to view workshop list'>".$count."</a>"
+        	);
+		
+        array_push($rows, $item);
+    }
+
+}
+    
+    $page_content .= bootstrap_table_format($headers, $rows);
+    
+
+   }else{
+	$page_content = "No Record Found";
+  }
+  return $page_content;
+
+}
+
+
+function completed_workshops_list($String,$foss_id,$city,$state,$startdate,$enddate){
+		
+
+		$query = db_select('foss_type');
+    		$query->fields('foss_type', array(
+        	'id'
+    		));
+   		 $query->fields('foss_type', array(
+        	'foss_name'
+    		));
+    		
+   	 	$query->condition('foss_selfworkshop_no', $foss_id);
+   	 	$result = $query->execute();
+		$fossdetail = $result->fetchObject();
+		$fossname=$fossdetail->foss_name;
+		$caption="<h4>List of Workshop under FOSS : ".$fossname."<br><br><h4>";
+	
+		if($city=="NONE"){
+		   $city="%";
+		}else{
+		   $city=$city;
+		}
+		if($state=="NONE"){
+		   $state="%";
+		}else{
+		   $state=$state;
+		}
+	
+		$query = "";
+		$count_query = "";
+		$rows=array();
+		db_set_active('selfworkshop');
+	
+
+			$header = array(
+			array('data'=>'Institution', 'field'=>'ac.institution_name'),
+			array('data'=>'City', 'field'=>'c.name'),
+			array('data'=>'Workshop_Date', 'field'=>'t.tdate', 'sort'=>'desc'),
+			array('data'=>'No. of students', 'field'=>'t.participant_count'),
+			array('data'=>''),
+		);
+		/*$query = "SELECT t.id, ac.institution_name, c.name as city, t.foss_id, t.tdate, t.participant_count FROM events_training t, events_academiccenter ac, events_city c WHERE t.academic_id=ac.id and ac.city_id=c.id and (t.status = 4 AND t.foss_id = 49 )";
+            $count_query = "SELECT count(t.id) FROM events_training t, events_academiccenter ac, events_city c WHERE t.academic_id=ac.id and ac.city_id=c.id and (t.status = 4 AND t.foss_id = 49 )";*/
+
+		db_set_active('workshop_info');
+		$query = db_select('events_training', 't');
+		$query->join('events_academiccenter','ac','ac.id=t.academic_id');
+		$query->join('events_city','c','c.id=ac.city_id');
+		$query->join('events_state','s','s.id=c.state_id');
+		$query->fields('t', array('id', 'foss_id', 'tdate', 'participant_count'));
+		$query->fields('ac', array('institution_name'));
+		$query->fields('c', array('name'));
+		$query->addField('c','name','city');
+		$query->condition('t.status', 4);
+		$query->condition('t.foss_id', $foss_id);
+		$query->condition('c.name',$city,'LIKE');
+		$query->condition('s.name',$state,'LIKE');
+		$query->condition('t.tdate', $startdate, '>=');
+    		$query->condition('t.tdate', $enddate, '<=');
+		$result = $query->extend('PagerDefault')->limit(50)->extend('TableSort')->orderByHeader($header)->execute();
+		$number_of_rows = $result->rowCount();
+		
+		
+		while ($row = $result->fetchObject()) {
+			$item = array($row->institution_name, $row->city, $row->tdate, $row->participant_count,
+		"<a href=".$GLOBALS['base_url']."/view-completed-workshop/".$row->id." target='_blank' title='Click to view detail'>View</a>",
+		);
+				array_push($rows, $item);
+		}
+		
+
+		if ($number_of_rows==0) {
+			$output .= '<div style="color:red;text-align:center;">List is empty.</div>';
+		} else {
+			
+			$build['pager_table'] = array(
+    			'#theme' => 'table',
+    			'#header' => $header,
+    			'#rows' => $rows,
+			'#caption'=>$caption,
+			'#attributes' => array (
+    			'class' => array('table table-bordered table-hover'),
+  				),
+  			);
+
+  			// Attach the pager theme.
+  			$build['pager_pager'] = array('#theme' => 'pager');
+			$output = $build;
+
+			
+		}
+
+		db_set_active('default');
+		return $output;
+		
+	}
+
+
+function view_completed_workshop($id = NULL){
+
+	 	if($id){
+	 		
+			db_set_active('selfworkshop');
+			$query = db_select('events_training', 't');
+			$query->join('events_academiccenter','ac','ac.id=t.academic_id');
+			$query->join('events_city','c','c.id=ac.city_id');
+			$query->join('creation_fosscategory','f','f.id=t.foss_id');
+			$query->fields('f', array('foss'));
+			$query->fields('ac', array('address', 'academic_code', 'institution_name'));
+			$query->fields('c', array('name'));
+			$query->addField('c','name','city');
+			$query->fields('t', array('organiser_id', 'training_code', 'tdate', 'participant_count'));
+			$query->condition('t.id', $id);
+			$result = $query->execute();
+	 		
+	 		if($result){
+
+				$item =$result->fetchObject();
+
+				db_set_active('selfworkshop');
+				$query = db_select('events_organiser', 'o');
+				$query->join('auth_user','u','u.id=o.user_id');
+				$query->fields('u', array('first_name', 'last_name'));
+				$query->condition('o.id', 2);
+				$result = $query->execute();
+
+	 			//db_set_active('workshop_info');
+	 			//$result = db_query($query);
+	 			db_set_active('default');
+	 			$organiser = $result->fetchObject();
+	 			
+	 			$output .= '<table width="100%" cellpadding="6" class="table table-bordered table-hover">';
+	 			$output .= '<tr><td><b>Workshop Code</b></td><td><b>'.$item->training_code.'</b></td></tr>';
+	 			$output .= '<tr><td><b>Foss Category</b></td><td><b>'.$item->foss.'</b></td></tr>';
+	 			$output .= '<tr><td><b>Date & Time</b></td><td><b>'.$item->tdate.'</b></td></tr>';
+	 			$output .= '<tr><td><b>No.of Participants </b></td><td><b>'.$item->participant_count.'</b></td></tr>';
+				$output .= '<tr><td><b>Organiser </b></td><td><b>'.$organiser->first_name.' '.$organiser->last_name.'
+				</b></td></tr>';
+	 			$output .= '<tr><td colspan="2"><div Style="height:20px"></div></td></tr>';
+	 			
+	 			$output .= '<tr><td><b>Academic Center Code</b></td><td><b>'.$item->academic_code.'</b></td></tr>';
+	 			$output .= '<tr><td><b>Institution Name</b></td><td><b>'.$item->institution_name.'</b></td></tr>';
+	 			$output .= '<tr><td><b>Street</b></td><td><b>'.$item->address.'</b></td></tr>';
+	 			$output .= '<tr><td><b>City</b></td><td><b>'.$item->city.'</b></td></tr>';
+	 			$output .= '</table>';
+	 			
+	 			return $output;
+	 		}else {
+	 			drupal_set_message('Error accessing database selfworkshop');
+	 		}
+	 	}else{
+	 		return "<p>Sorry, no data found.</p>";
+	 	}
+	}
+
+
+
 
 
 function fossee_stats_init()
